@@ -1,0 +1,35 @@
+{
+    "key": 
+        { 
+            "type": "string",
+            "requited": true
+        },
+    "summary":
+        {
+            "type": "string",
+            "required": false
+        },
+    "description":
+        {
+            "type": "string",
+            "required": false
+        },
+    "Support Cases":
+        {
+            "type": "string",
+            "required": false,
+            "custom": true
+        },
+    "Components":
+        {
+            "type": "object",
+            "required": false,
+        },
+    "Acceptance Criteria":
+        {
+            "type": "string",
+            "required": false,
+            "custom": true
+        },
+
+}
