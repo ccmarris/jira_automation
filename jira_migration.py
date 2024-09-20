@@ -431,12 +431,13 @@ class ISSUES():
         '''
         return self.issue.fields.comment.comments
 
+
 def MIGRATE_ISSUE():
     '''
     '''
     def __init__(self, 
                  source:str, 
-                 destination:str, 
+                 destination:str = '', 
                  inifile:str = 'jira.ini',
                  server:str = 'https://infoblox.atlassian.net'):
         '''
@@ -449,27 +450,33 @@ def MIGRATE_ISSUE():
 
         return
         
+
     def migrate_issue(self, include_comments:bool = True):
         '''
+        Migrate source Issue to destination Issue
         '''
 
         return
 
+
     def copy_comments(self):
         '''
+        Copy comments from source to destination
         '''
         if self.src.issue and self.dst.issue:
             comments = self.get_comments()
             # Add comments to the target issue
             for comment in comments:
                 author = comment.author.displayName
-                created = datetime.strptime(comment.created, '%Y-%m-%dT%H:%M:%S.%f%z')
-                body = f"Comment by {author} on {created.strftime('%Y-%m-%d %H:%M:%S')}:\n\n{comment.body}"
-                jira.add_comment(target_issue_key, body)
+                created = datetime.strptime(comment.created, 
+                                            '%Y-%m-%dT%H:%M:%S.%f%z')
+                body = ( f"Comment by {author} on "
+                         f"{created.strftime('%Y-%m-%d %H:%M:%S')}:\n\n{comment.body}" )
+                jira.add_comment(self.dst.issue.key, body)
 
         else:
             if not self.src.issue:
-            logging.error(f'Cannot find source Jira issue: {}')
+                logging.error(f'Cannot find source Jira issue: {}')
         return
 
 # --- Functions
