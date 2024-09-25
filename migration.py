@@ -48,32 +48,30 @@ __author_email__ = 'chris@infoblox.com'
 
 
 import logging
-import os
-import sys
+import issues
 import datetime
 import time
-import argparse
-import configparser
 import jira
 import jira.exceptions
 from rich import print
 
 
-def MIGRATE_ISSUE():
+class MIGRATE_ISSUE():
     '''
     '''
     def __init__(self, 
-                 source:str, 
-                 destination:str = '', 
+                 issue:str,
+                 dst_project:str = 'IFR', 
                  inifile:str = 'jira.ini',
                  server:str = 'https://infoblox.atlassian.net'):
         '''
         '''
-        self.src = ISSUES(inifile=inifile, server=server)
-        if not self.src.get_issue(source):
+        self.src = issues.ISSUES(inifile=inifile, server=server)
+        if not self.src.get_issue(issue):
             assert self.src.issue
-        self.dst = ISSUES(inifile=inifile, server=server)
-        # self.dst.get_issue(source)
+        self.dst = issues.ISSUES(inifile=inifile, server=server)
+        self.dst_project = dst_project
+        self.required_fields = self.dst.get_required_fields(self.dst_project)
 
         return
         
@@ -82,8 +80,53 @@ def MIGRATE_ISSUE():
         '''
         Migrate source Issue to destination Issue
         '''
+        status = self.dst.create_issue(summary=self.src.issue.fields.summary,
+                        description=self.normalise_string(self.src.issue.fields.description),
+                        project=self.dst_project
+                        )
 
-        return
+
+        return status
+
+
+    def normalise_string(self, input_str:str) -> str:
+        '''
+        '''
+        outstr:str = ''
+
+        outstr = input_str.replace('\n','')
+        outstr = outstr.replace('\r','')
+
+        return outstr
+
+    def allowed_components(self):
+        '''
+        '''
+        allowed:list = []
+
+        for field in self.required_fields:
+            if field.get('components'):
+                values = field.get('components').get('allowedValues')
+                if values:
+                    for comp in values:
+                        allowed.append(comp.get('name'))
+                break
+        
+        self.allowed = allowed
+        
+        return self.allowed
+
+
+    def build_components(self):
+        '''
+        '''
+        components:list = []
+
+        for component in self.src.issue.fields.components:
+            if component.name in self.allowed:
+                components.append({ 'name': component.name })
+
+        return components
 
 
     def copy_comments(self):
@@ -91,7 +134,7 @@ def MIGRATE_ISSUE():
         Copy comments from source to destination
         '''
         if self.src.issue and self.dst.issue:
-            comments = self.get_comments()
+            comments = self.src.get_comments()
             # Add comments to the target issue
             for comment in comments:
                 author = comment.author.displayName

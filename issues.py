@@ -52,7 +52,6 @@ import os
 import sys
 import datetime
 import time
-import argparse
 import configparser
 import jira
 import jira.exceptions
@@ -207,6 +206,38 @@ class ISSUES():
             status = False
         return status
 
+
+    def create_issue(self,
+                     summary:str,
+                     description:str,
+                     issue_type:str = 'New Feature',
+                     custom_fields:dict = None,
+                     project:str = 'IFR') -> str:
+        '''
+        '''
+        status = False
+        issue_dict:dict
+
+        issue_dict = {
+                      'project': { 'key': project},
+                      'summary': summary,
+                      'description': description,
+                      'issuetype': { 'name': issue_type }
+                     }
+        
+        if custom_fields:
+            issue_dict.update(custom_fields)
+        
+
+        try:
+            self.issue = self.jira_session.create_issue(fields=issue_dict)
+            status = True
+        except:
+            status = False
+            raise
+
+        return status
+        
 
     def get_transitions(self) -> bool:
         '''
@@ -404,6 +435,7 @@ class ISSUES():
 
     def get_schema(self, project='IFR', issuetype='New Feature') -> dict:
         '''
+
         '''
         schema:list = []
         
@@ -418,7 +450,9 @@ class ISSUES():
         return schema
 
 
-    def get_required_fields(self, project='IFR', issuetype='New Feature') -> list:
+    def get_required_fields(self, 
+                            project:str='IFR', 
+                            issuetype:str='New Feature') -> list:
         '''
         '''
         if not self.field_map:
