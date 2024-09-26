@@ -72,6 +72,7 @@ class MIGRATE_ISSUE():
         self.dst = issues.ISSUES(inifile=inifile, server=server)
         self.dst_project = dst_project
         self.required_fields = self.dst.get_required_fields(self.dst_project)
+        self.allowed_components = self.get_allowed_components()
 
         return
         
@@ -99,7 +100,8 @@ class MIGRATE_ISSUE():
 
         return outstr
 
-    def allowed_components(self):
+
+    def get_allowed_components(self):
         '''
         '''
         allowed:list = []
@@ -112,9 +114,7 @@ class MIGRATE_ISSUE():
                         allowed.append(comp.get('name'))
                 break
         
-        self.allowed = allowed
-        
-        return self.allowed
+        return allowed
 
 
     def build_components(self):
@@ -123,8 +123,13 @@ class MIGRATE_ISSUE():
         components:list = []
 
         for component in self.src.issue.fields.components:
-            if component.name in self.allowed:
+            if component.name in self.allowed_components:
                 components.append({ 'name': component.name })
+        
+        # Need a holding component if there are no matches, need to consider
+        # translating some of the existing names
+        if not components:
+            components = [ { 'name': 'DNS' } ]
 
         return components
 

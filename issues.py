@@ -207,15 +207,30 @@ class ISSUES():
         return status
 
 
-    def create_issue(self,
-                     summary:str,
-                     description:str,
-                     issue_type:str = 'New Feature',
-                     custom_fields:dict = None,
-                     project:str = 'IFR') -> str:
+    def create_issue(self, issue_dict:dict) -> bool:
         '''
         '''
         status = False
+
+        try:
+            self.issue = self.jira_session.create_issue(fields=issue_dict)
+            status = True
+        except jira.exceptions.JIRAError as Err:
+            status = False
+            logging.error(err)
+
+        return status
+        
+    
+    def create_issue_dict(self,
+                          summary:str, 
+                          description:str, 
+                          issue_type:str = 'New Feature', 
+                          custom_fields:dict = None, 
+                          components:list = [],
+                          project:str = 'IFR') -> dict:
+        '''
+        '''
         issue_dict:dict
 
         issue_dict = {
@@ -228,16 +243,11 @@ class ISSUES():
         if custom_fields:
             issue_dict.update(custom_fields)
         
+        if components:
+            issue_dict.update(components)
 
-        try:
-            self.issue = self.jira_session.create_issue(fields=issue_dict)
-            status = True
-        except:
-            status = False
-            raise
+        return issue_dict
 
-        return status
-        
 
     def get_transitions(self) -> bool:
         '''
