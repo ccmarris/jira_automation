@@ -73,6 +73,7 @@ class MIGRATE_ISSUE():
         self.dst_project = dst_project
         self.required_fields = self.dst.get_required_fields(self.dst_project)
         self.allowed_components = self.get_allowed_components()
+        self.required_fields = self.dst.get_required_fields()
 
         return
         
@@ -81,17 +82,50 @@ class MIGRATE_ISSUE():
         '''
         Migrate source Issue to destination Issue
         '''
-        status = self.dst.create_issue(summary=self.src.issue.fields.summary,
-                        description=self.normalise_string(self.src.issue.fields.description),
-                        project=self.dst_project
-                        )
+        status:bool
+        summary:str
+        description:str
+        project:str
+        components:list
+        comments: list
+        custom_fields:dict
 
+        summary = self.src.issue.fields.summary
+        description = self.normalise_string(self.src.issue.fields.description)
+        project = self.dst_project
+        versions = self.get_versions()
+        
+        components = self.build_components()
+
+        custom_fields = self.build_custom_fields()
+
+        issue_dict = {
+                        "issuetype": { "name": "New Feature" },
+                        "summary": summary,
+                        "description": description,
+                        "project": { "key": project },
+                        "versions": versions,
+                        "components": components
+                    }
+
+        issue_dict.update(custom_fields)
+
+        logging.debug(f'Issue Dictionary: {issue_dict}')
+
+        if self.dst.create_issue(issue_dict=issue_dict):
+            status = True
+            self.add_origin_data()
+            if include_comments:
+                self.copy_comments()
+        else:
+            status = False
 
         return status
 
 
     def normalise_string(self, input_str:str) -> str:
         '''
+        Remove unwanted charaters/strings
         '''
         outstr:str = ''
 
@@ -101,24 +135,61 @@ class MIGRATE_ISSUE():
         return outstr
 
 
+    def add_origin_data(self):
+        '''
+        Add comment with original RFE, and timestamps
+        '''
+
+        rfe = self.src.issue.key
+        link = self.src.issue.self
+        created = self.src.issue.fields.created
+        updated = self.src.issue.fields.updated
+        reporter = self.src.issue.fields.reporter.displayName
+
+        # Add web link
+        self.dst.add_weblink(link, rfe)
+        
+        comment = 'Origin: {rfe}, Created by: {reporter}, Created: {created}, Last updated: {updated}'
+
+        return comment
+
+
+
+    def get_versions(self) -> list:
+        '''
+        Retrieve current versions or create a default response
+        '''
+        src_versions:list = []
+
+        if hasattr(self.src.issue.fields, 'versions'):
+            src_versions = self.src.issue.fields.versions
+            if not src_versions:
+                src_versions = [ { 'name': 'NIOS 8.6.5' } ]
+        
+        logging.debug(f'Processed versions: {src_versions}')
+        
+        return src_versions
+
+
     def get_allowed_components(self):
         '''
+        Get the allowed component values 
         '''
         allowed:list = []
+        fields = self.required_fields
 
-        for field in self.required_fields:
-            if field.get('components'):
-                values = field.get('components').get('allowedValues')
-                if values:
-                    for comp in values:
-                        allowed.append(comp.get('name'))
-                break
-        
+        if fields.get('components'):
+            values = fields.get('components').get('allowedValues')
+            if values:
+                for comp in values:
+                    allowed.append(comp.get('name'))
+
         return allowed
 
 
-    def build_components(self):
+    def build_components(self) -> dict:
         '''
+        Build the components from the source or set a default value
         '''
         components:list = []
 
@@ -134,6 +205,112 @@ class MIGRATE_ISSUE():
         return components
 
 
+    def get_req_custom_fields(self) -> dict:
+        '''
+        '''
+        custom_fields:dict = {}
+        fields:dict = self.required_fields
+
+        for field, field_value in fields.items():
+            if 'customfield' in field_value.get('key'):
+                custom_fields.update( { field_value['key']: field_value } )
+
+        return custom_fields
+
+
+    def build_custom_fields(self):
+        '''
+        '''
+        custom_fields:dict = {}
+        required = self.get_req_custom_fields()
+
+        for cf in required.keys():
+            custom_fields.update(self.process_custom_field(cf))
+
+        return custom_fields
+    
+
+    def process_custom_field(self, custom_field_id) -> dict:
+        '''
+        '''
+        processed_field:dict = {}
+        src_value = None
+
+        field_type = self.get_custom_field_type(custom_field_id)
+        if field_type == 'string':
+            if hasattr(self.src.issue.fields, custom_field_id):
+                src_value = getattr(self.src.issue.fields, custom_field_id)
+            else:
+                alternate = self.remap_field(custom_field_id)
+                if hasattr(self.src.issue.fields, custom_field_id):
+                    src_value = getattr(self.src.issue.fields, alternate)
+                else:
+                    src_value = 'Not defined in RFE'
+
+            if not src_value:
+                src_value = 'Not defined in RFE'
+
+            processed_field.update( { custom_field_id: src_value } )
+
+        elif field_type == 'option':
+            if hasattr(self.src.issue.fields, custom_field_id):
+                field_obj = getattr(self.src.issue.fields, custom_field_id)
+            else:
+                field_obj = None
+
+            if field_obj:
+                src_value = { 'value': self.remap_option(field_obj.value)}
+            else:
+                alternate = self.remap_field(custom_field_id)
+                if hasattr(self.src.issue.fields, alternate):
+                    field_obj = getattr(self.src.issue.fields, alternate)
+                    src_value = self.remap_option(field_obj.value)
+
+            processed_field.update( { custom_field_id: { 'value': src_value } } )
+
+        return processed_field
+
+
+    def get_custom_field_type(self, custom_field_id:str) -> str:
+        '''
+        '''
+        # Get the custom field details
+        field_type:str 
+        mapped_field:str = self.dst.field_map.get(custom_field_id)
+
+        field_type = self.required_fields.get(mapped_field).get('schema').get('type')
+        
+        return field_type
+
+
+    def remap_field(self, field:str) -> str:
+        '''
+        '''
+        alt_mappings:dict = {
+                             'Product': 'Product (migrated)'
+        }
+
+        newfield = alt_mappings.get(self.src.field_map.get(field))
+
+        return self.src.field_map.get(newfield)
+
+
+    def remap_option(self, option):
+        '''
+        Remap option values or return unchanged
+        '''
+        mappings:dict = {
+                            "ActiveTrust": "BloxOne TD"
+                        }
+
+        if option in mappings.keys():
+            remapped = mappings.get(option)
+        else:
+            remapped = option
+
+        return remapped
+
+
     def copy_comments(self):
         '''
         Copy comments from source to destination
@@ -143,13 +320,8 @@ class MIGRATE_ISSUE():
             # Add comments to the target issue
             for comment in comments:
                 author = comment.author.displayName
-                created = datetime.strptime(comment.created, 
-                                            '%Y-%m-%dT%H:%M:%S.%f%z')
                 body = ( f"Comment by {author} on "
-                         f"{created.strftime('%Y-%m-%d %H:%M:%S')}:\n\n{comment.body}" )
-                jira.add_comment(self.dst.issue.key, body)
+                         f"{comment.created}:\n\n{comment.body}" )
+                self.dst.jira_session.add_comment(self.dst.issue.key, body)
 
-        else:
-            if not self.src.issue:
-                logging.error(f'Cannot find source Jira issue: {source}')
         return

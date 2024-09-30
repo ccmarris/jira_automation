@@ -244,27 +244,18 @@ def main():
             handlers=handlers
             )
 
+
     if args.issue:
-        if args.transition == 'status_check':
-            status_check(issue=args.file,
-                         config=args.config)
+        JIRA = migration.MIGRATE_ISSUE(issue=args.issue,
+                                       inifile='/Users/marrison/Projects/configs/jira.ini', 
+                                       server='https://infoblox-sandbox-129.atlassian.net')
+        if JIRA.migrate_issue():
+            print(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
         else:
-            process_issue(config=args.config, 
-                        issue=args.issue, 
-                        transition=args.transition,
-                        resolution=args.resolution,
-                        comment=args.comment)
+            print(f'Failed to migrate issue: {JIRA.src.issue.key}')
+
     elif args.file:
-        if args.transition == 'status_check':
-            bulk_status_check(in_file=args.file,
-                              config=args.config)
-        
-        else:
-            process_file(in_file=args.file, 
-                        config=args.config,
-                        transition=args.transition,
-                        resolution=args.resolution,
-                        comment=args.comment)
+        JIRA.migrate_issue()
 
     return
 

@@ -107,6 +107,7 @@ class ISSUES():
         self.issue:object = None
         self.fields:list = []
         self.field_map:dict = {}
+        self.required_fields:dict = {}
 
         if inifile:
             self.cfg:dict = self.read_ini(inifile)
@@ -217,7 +218,7 @@ class ISSUES():
             status = True
         except jira.exceptions.JIRAError as Err:
             status = False
-            logging.error(err)
+            logging.error(Err)
 
         return status
         
@@ -468,7 +469,7 @@ class ISSUES():
         if not self.field_map:
             self.create_field_map()
 
-        required_fields:list = []
+        required_fields:dict = {}
         
         schema = self.get_schema(project=project, issuetype=issuetype)
 
@@ -476,7 +477,7 @@ class ISSUES():
             if field_value.get('required'):
                 if 'customfield' in field:
                     field = self.field_map.get(field)
-                required_fields.append({field: field_value})
+                required_fields.update({field: field_value})
         
         return required_fields
 
@@ -518,3 +519,49 @@ class ISSUES():
         '''
         '''
         return self.issue.fields.comment.comments
+    
+
+    def add_weblink(self, link:str, comment:str):
+        '''
+        '''
+        status:bool = False
+
+        web_link = {
+                    "object": { 
+                                "url": link,
+                                "title": comment
+                              }
+                  }
+
+        try:
+            if self.jira_session.add_remote_link(self.issue.key, web_link):
+                status = True
+                logging.info(f'Sucessfully add web link to {self.issue.key}')
+            else:
+                status = False
+        except jira.exceptions.JIRAError as err:
+            logging.error(f'Failed add web link to {self.issue.key}')
+            logging.error(err)
+            status = False
+        
+        return status
+
+
+    def add_comment(self, comment) -> bool:
+        '''
+        Add a comment to the RFE
+        '''
+        status:bool = False
+
+        try:
+            self.jira_session.add_comment(self.issue.key, body=comment)
+            status = True
+            logging.info(f'Added comment to {self.issue.key}')
+            logging.debug(f'Comment: {comment}')
+        except jira.exceptions.JIRAError as err:
+            logging.error(f'Failed add comment to {self.issue.key}')
+            logging.debug(f'Comment: {comment}')
+            logging.error(err)
+            status = False
+        
+        return status
