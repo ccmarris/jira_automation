@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.0.1'
+__version__ = '0.0.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -87,7 +87,6 @@ class MIGRATE_ISSUE():
         description:str
         project:str
         components:list
-        comments: list
         custom_fields:dict
 
         summary = self.src.issue.fields.summary
@@ -95,10 +94,10 @@ class MIGRATE_ISSUE():
         project = self.dst_project
         versions = self.get_versions()
         
+        # Create components list
         components = self.build_components()
 
-        custom_fields = self.build_custom_fields()
-
+        # Build basic dictionary of minimum fields
         issue_dict = {
                         "issuetype": { "name": "New Feature" },
                         "summary": summary,
@@ -108,13 +107,18 @@ class MIGRATE_ISSUE():
                         "components": components
                     }
 
+        # Handle Custom Fields
+        custom_fields = self.build_custom_fields()
         issue_dict.update(custom_fields)
 
         logging.debug(f'Issue Dictionary: {issue_dict}')
 
+        # Create Destination Issue
         if self.dst.create_issue(issue_dict=issue_dict):
             status = True
+            # Add Origin Information as a comment
             self.add_origin_data()
+            # Check whether we copy existing comments from source issue
             if include_comments:
                 self.copy_comments()
         else:
@@ -139,6 +143,7 @@ class MIGRATE_ISSUE():
         '''
         Add comment with original RFE, and timestamps
         '''
+        status:bool = False
 
         rfe = self.src.issue.key
         link = self.src.issue.self
@@ -147,12 +152,29 @@ class MIGRATE_ISSUE():
         reporter = self.src.issue.fields.reporter.displayName
 
         # Add web link
-        self.dst.add_weblink(link, rfe)
+        '''
+        if self.dst.add_weblink(link, rfe):
+            
+            logging.info(f'Added web link to original issue')
         
-        comment = 'Origin: {rfe}, Created by: {reporter}, Created: {created}, Last updated: {updated}'
+        else:
+            logging.error(f'Failed to add web link')
+            status = False
 
-        return comment
+        '''
 
+        # Build comment
+        comment = ( f'Origin: \n {rfe}, \nCreated by: {reporter}, \nCreated: {created}, '
+                    f'\nLast updated: {updated}' )
+        # Add comment
+        if self.dst.add_comment(comment=comment):
+            status = True
+        else:
+            logging.error(f'Failed to add origin data')
+            status = False
+        
+
+        return status
 
 
     def get_versions(self) -> list:
@@ -162,14 +184,51 @@ class MIGRATE_ISSUE():
         src_versions:list = []
 
         if hasattr(self.src.issue.fields, 'versions'):
-            src_versions = self.src.issue.fields.versions
-            if not src_versions:
+            versions = self.src.issue.fields.versions
+            if versions:
+                for version in versions:
+                    if hasattr(version, 'name'):
+                        if self.check_version(version.name):
+                            src_versions.append = version.name
+                        else:
+                            src_versions.append({ 'name': 'NIOS 8.6.5' })
+                    else:
+                            src_versions.append({ 'name': 'NIOS 8.6.5' })
+            else:
                 src_versions = [ { 'name': 'NIOS 8.6.5' } ]
-        
+        else:
+            src_versions = [ { 'name': 'NIOS 8.6.5' } ]
+
         logging.debug(f'Processed versions: {src_versions}')
         
         return src_versions
 
+
+    def check_version(self, version):
+        '''
+        '''
+        allowed:bool = False
+        allowed_versions:list = self.get_allowed_versions()
+
+        if version in allowed_versions:
+            allowed = True
+        else:
+            allowed = False
+        
+        return allowed
+
+
+    def get_allowed_versions(self):
+        '''
+        '''
+        allowed_versions:list = []
+
+        versions:list = self.required_fields.get('versions').get('allowedValues')
+        for v in versions:
+            allowed_versions.append(v.get('name'))
+
+        return allowed_versions
+    
 
     def get_allowed_components(self):
         '''
@@ -286,13 +345,21 @@ class MIGRATE_ISSUE():
     def remap_field(self, field:str) -> str:
         '''
         '''
+        mapped_field:str
+
         alt_mappings:dict = {
-                             'Product': 'Product (migrated)'
-        }
+                             'Product': 'Product (migrated)',
+                             'Support Cases': 'Support Cases (migrated)',
+                             'Prospects/Customers': 'Prospects/Customers (migrated)'
+                            }
 
         newfield = alt_mappings.get(self.src.field_map.get(field))
-
-        return self.src.field_map.get(newfield)
+        if newfield:
+            mapped_field = self.src.field_map.get(newfield)
+        else:
+            mapped_field = field
+        
+        return mapped_field
 
 
     def remap_option(self, option):
