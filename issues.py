@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.2'
+__version__ = '0.1.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -520,6 +520,27 @@ class ISSUES():
         '''
         return self.issue.fields.comment.comments
     
+
+    def update_field(self, field:str, value:str) -> bool:
+        '''
+        '''
+        status:bool = False
+
+        if 'customfield_' in field:
+            rfe_field = field
+        else:
+            rfe_field = self.field_map.get(field)
+        
+        try:
+            self.issue.update(fields={rfe_field: value})
+            logging.debug(f'{rfe_field}: {value}')
+            status = True
+        except jira.JIRAError as err:
+            logging.debug({err})
+            status = False
+        
+        return status
+
 
     def add_weblink(self, link:str, comment:str):
         '''

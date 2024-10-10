@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.0.5'
+__version__ = '0.1.0'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -139,40 +139,34 @@ class MIGRATE_ISSUE():
         return outstr
 
 
-    def add_origin_data(self):
+    def add_origin_data(self, custom_field:str = ''):
         '''
         Add comment with original RFE, and timestamps
         '''
         status:bool = False
 
         rfe = self.src.issue.key
-        link = self.src.issue.self
         created = self.src.issue.fields.created
         updated = self.src.issue.fields.updated
         reporter = self.src.issue.fields.reporter.displayName
 
-        # Add web link
-        '''
-        if self.dst.add_weblink(link, rfe):
-            
-            logging.info(f'Added web link to original issue')
+        # Update 'RFE #' custom field
+        if self.dst.update_field(field=custom_field, value=rfe):
+            logging.info(f'Added RFE {rfe} to field {custom_field}')
         
-        else:
-            logging.error(f'Failed to add web link')
-            status = False
+            # Build comment
+            comment = ( f'Origin: {rfe}, \nCreated by: {reporter}, '
+                        f'\nCreated: {created}, \nLast updated: {updated}' )
+            # Add comment
+            if self.dst.add_comment(comment=comment):
+                status = True
+            else:
+                logging.error(f'Failed to add origin data')
+                status = False
 
-        '''
-
-        # Build comment
-        comment = ( f'Origin: \n {rfe}, \nCreated by: {reporter}, \nCreated: {created}, '
-                    f'\nLast updated: {updated}' )
-        # Add comment
-        if self.dst.add_comment(comment=comment):
-            status = True
         else:
-            logging.error(f'Failed to add origin data')
+            logging.error(f'Failed to add RFE {rfe} to field {custom_field}')
             status = False
-        
 
         return status
 
