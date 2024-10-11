@@ -71,14 +71,19 @@ class MIGRATE_ISSUE():
             assert self.src.issue
         self.dst = issues.ISSUES(inifile=inifile, server=server)
         self.dst_project = dst_project
-        self.required_fields = self.dst.get_required_fields(self.dst_project)
+        # self.required_fields = self.dst.get_required_fields(self.dst_project)
+        self.issue_fields = self.dst.get_issue_fields()
+        self.required_fields = self.dst.get_issue_fields(required=True)
         self.allowed_components = self.get_allowed_components()
-        self.required_fields = self.dst.get_required_fields()
 
         return
         
 
-    def migrate_issue(self, include_comments:bool = True):
+    def migrate_issue(self, 
+                      include_comments:bool = True,
+                      additional_fields:list = ['Support Cases',
+                                                'labels',
+                                                'Prospects/Customers' ]):
         '''
         Migrate source Issue to destination Issue
         '''
@@ -108,7 +113,7 @@ class MIGRATE_ISSUE():
                     }
 
         # Handle Custom Fields
-        custom_fields = self.build_custom_fields()
+        custom_fields = self.build_custom_fields(additional_fields=additional_fields)
         issue_dict.update(custom_fields)
 
         logging.debug(f'Issue Dictionary: {issue_dict}')
@@ -117,10 +122,14 @@ class MIGRATE_ISSUE():
         if self.dst.create_issue(issue_dict=issue_dict):
             status = True
             # Add Origin Information as a comment
-            self.add_origin_data()
+            if self.add_origin_data():
+                logging.info('Origin data added')
+            else:
+                logging.error('Origin data not added')
             # Check whether we copy existing comments from source issue
             if include_comments:
                 self.copy_comments()
+            
         else:
             status = False
 
@@ -139,7 +148,7 @@ class MIGRATE_ISSUE():
         return outstr
 
 
-    def add_origin_data(self, custom_field:str = ''):
+    def add_origin_data(self, custom_field:str = 'RFE #'):
         '''
         Add comment with original RFE, and timestamps
         '''
@@ -271,14 +280,35 @@ class MIGRATE_ISSUE():
         return custom_fields
 
 
-    def build_custom_fields(self):
+    def get_all_custom_fields(self) -> dict:
         '''
         '''
         custom_fields:dict = {}
-        required = self.get_req_custom_fields()
+        fields:dict = self.required_fields
 
-        for cf in required.keys():
-            custom_fields.update(self.process_custom_field(cf))
+        for field, field_value in fields.items():
+            if 'customfield' in field_value.get('key'):
+                custom_fields.update( { field_value['key']: field_value } )
+
+        return custom_fields
+
+
+    def build_custom_fields(self, 
+                            include_required:bool = True,
+                            additional_fields:list = []):
+        '''
+        '''
+        custom_fields:dict = {}
+
+        if include_required:
+            required = self.get_req_custom_fields()
+
+            for cf in required.keys():
+                custom_fields.update(self.process_custom_field(cf))
+        
+        if additional_fields:
+            for f in additional_fields:
+                custom_fields.update(self.process_custom_field(f))
 
         return custom_fields
     
@@ -329,9 +359,15 @@ class MIGRATE_ISSUE():
         '''
         # Get the custom field details
         field_type:str 
-        mapped_field:str = self.dst.field_map.get(custom_field_id)
+        if 'customfield' in custom_field_id:
+            mapped_field:str = self.dst.field_map.get(custom_field_id)
+        else:
+            mapped_field = custom_field_id
 
-        field_type = self.required_fields.get(mapped_field).get('schema').get('type')
+        if self.issue_fields.get(mapped_field):
+            field_type = self.issue_fields.get(mapped_field).get('schema').get('type')
+        else:
+            field_type = 'String'
         
         return field_type
 
@@ -347,7 +383,11 @@ class MIGRATE_ISSUE():
                              'Prospects/Customers': 'Prospects/Customers (migrated)'
                             }
 
-        newfield = alt_mappings.get(self.src.field_map.get(field))
+        if 'customfield' in field:
+            newfield = alt_mappings.get(self.src.field_map.get(field))
+        else:
+            newfield = alt_mappings.get(field)
+
         if newfield:
             mapped_field = self.src.field_map.get(newfield)
         else:

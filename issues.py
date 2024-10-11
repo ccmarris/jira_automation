@@ -49,9 +49,6 @@ __author_email__ = 'chris@infoblox.com'
 
 import logging
 import os
-import sys
-import datetime
-import time
 import configparser
 import jira
 import jira.exceptions
@@ -107,7 +104,7 @@ class ISSUES():
         self.issue:object = None
         self.fields:list = []
         self.field_map:dict = {}
-        self.required_fields:dict = {}
+        # self.required_fields:dict = {}
 
         if inifile:
             self.cfg:dict = self.read_ini(inifile)
@@ -444,7 +441,9 @@ class ISSUES():
         return self.jira_session.issue_type_by_name(name)
 
 
-    def get_schema(self, project='IFR', issuetype='New Feature') -> dict:
+    def get_schema(self, 
+                   project:str = 'IFR',
+                   issuetype:str='New Feature') -> dict:
         '''
 
         '''
@@ -461,25 +460,37 @@ class ISSUES():
         return schema
 
 
-    def get_required_fields(self, 
+    def get_issue_fields(self, 
                             project:str='IFR', 
-                            issuetype:str='New Feature') -> list:
+                            issuetype:str='New Feature',
+                            required:bool = False) -> list:
         '''
         '''
+        issue_fields:dict = {}
+
         if not self.field_map:
             self.create_field_map()
 
-        required_fields:dict = {}
+        if self.issue:
+            project = self.issue.fields.project.name
+        else:
+            project = project
+
         
         schema = self.get_schema(project=project, issuetype=issuetype)
 
         for field, field_value in schema.items():
-            if field_value.get('required'):
+            if required:
+                if field_value.get('required'):
+                    if 'customfield' in field:
+                        field = self.field_map.get(field)
+                    issue_fields.update({field: field_value})
+            else:
                 if 'customfield' in field:
                     field = self.field_map.get(field)
-                required_fields.update({field: field_value})
+                issue_fields.update({field: field_value})
         
-        return required_fields
+        return issue_fields
 
 
     def output_issue(self,
