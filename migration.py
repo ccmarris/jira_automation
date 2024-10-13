@@ -82,7 +82,6 @@ class MIGRATE_ISSUE():
     def migrate_issue(self, 
                       include_comments:bool = True,
                       additional_fields:list = ['Support Cases',
-                                                'labels',
                                                 'Prospects/Customers' ]):
         '''
         Migrate source Issue to destination Issue
@@ -319,9 +318,9 @@ class MIGRATE_ISSUE():
         for f in fieldlist:
             fname = self.dst.field_map.get(f)
             custom_fields.update(self.process_custom_field(fname))
+        
+        logging.debug(f'Additional field results: {custom_fields}')
 
-        print(custom_fields)
-        '''
         # Consider putting check for self.dst.issue before calling
         try:
             self.dst.issue.update(fields=custom_fields)
@@ -329,7 +328,6 @@ class MIGRATE_ISSUE():
         except jira.exceptions.JIRAError as err:
             logging(f'Adding additional fields failed: {err}')
             status = False
-        '''
         
         return status
 
