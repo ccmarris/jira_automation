@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -113,7 +113,7 @@ class MIGRATE_ISSUE():
                     }
 
         # Handle Custom Fields
-        custom_fields = self.build_custom_fields(additional_fields=additional_fields)
+        custom_fields = self.build_custom_fields()
         issue_dict.update(custom_fields)
 
         logging.debug(f'Issue Dictionary: {issue_dict}')
@@ -129,7 +129,11 @@ class MIGRATE_ISSUE():
             # Check whether we copy existing comments from source issue
             if include_comments:
                 self.copy_comments()
-            
+            if additional_fields:
+                if self.add_additional_fields(fieldlist=additional_fields):
+                    logging.info(f'Successfully added: {additional_fields}')
+                else:
+                    logging.error(f'Failed to add: {additional_fields}')
         else:
             status = False
 
@@ -293,25 +297,42 @@ class MIGRATE_ISSUE():
         return custom_fields
 
 
-    def build_custom_fields(self, 
-                            include_required:bool = True,
-                            additional_fields:list = []):
+    def build_custom_fields(self) -> dict:
         '''
         '''
         custom_fields:dict = {}
 
-        if include_required:
-            required = self.get_req_custom_fields()
+        required = self.get_req_custom_fields()
 
-            for cf in required.keys():
-                custom_fields.update(self.process_custom_field(cf))
-        
-        if additional_fields:
-            for f in additional_fields:
-                custom_fields.update(self.process_custom_field(f))
+        for cf in required.keys():
+            custom_fields.update(self.process_custom_field(cf))
 
         return custom_fields
     
+
+    def add_additional_fields(self, fieldlist:list) -> bool:
+        '''
+        '''
+        status:bool = False
+        custom_fields:dict = {}
+
+        for f in fieldlist:
+            fname = self.dst.field_map.get(f)
+            custom_fields.update(self.process_custom_field(fname))
+
+        print(custom_fields)
+        '''
+        # Consider putting check for self.dst.issue before calling
+        try:
+            self.dst.issue.update(fields=custom_fields)
+            status = True
+        except jira.exceptions.JIRAError as err:
+            logging(f'Adding additional fields failed: {err}')
+            status = False
+        '''
+        
+        return status
+
 
     def process_custom_field(self, custom_field_id) -> dict:
         '''
@@ -321,10 +342,10 @@ class MIGRATE_ISSUE():
 
         field_type = self.get_custom_field_type(custom_field_id)
         if field_type == 'string':
-            if hasattr(self.src.issue.fields, custom_field_id):
-                src_value = getattr(self.src.issue.fields, custom_field_id)
+            remap = self.remap_field(custom_field_id)
+            if hasattr(self.src.issue.fields, remap):
+                src_value = getattr(self.src.issue.fields, remap)
             else:
-                alternate = self.remap_field(custom_field_id)
                 if hasattr(self.src.issue.fields, custom_field_id):
                     src_value = getattr(self.src.issue.fields, alternate)
                 else:
