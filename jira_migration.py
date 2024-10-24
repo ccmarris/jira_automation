@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -51,9 +51,11 @@ import sys
 import logging
 import issues
 import migration
+import jira.exceptions
 import datetime
 import time
 import argparse
+import csv
 from rich import print
 
 
@@ -72,7 +74,8 @@ def process_issue(config:str,
 
 
     try:
-        r = issues.ISSUES(issue=issue, inifile=config)
+        r = issues.ISSUES(inifile=config)
+        r.get_issue(issue)
     
         current_status = r.status()
         current_status_id = r.status_id()
@@ -198,18 +201,103 @@ def parseargs():
                         help='Jira issues to process')
     parse.add_argument('-l', '--logfile', type=str, 
                         help='Name of logfile')
-    parse.add_argument('-t', '--transition', type=str, default='Close',
-                        help='Transition (case-sensitive) default="Close"')
-    parse.add_argument('-r', '--resolution', type=str, default="Field Cleanup 2024 May",
+    parse.add_argument('-o', '--output', type=str, 
+                        help='Name of output file for CSV')
+    parse.add_argument('-S', '--summary', action='store_true', 
+                        help='Output summary information of input data')
+    parse.add_argument('-m', '--migrate', action='store_true', 
+                        help='Migrate issue(s)')
+    parse.add_argument('-t', '--transition', type=str, 
+                        help='Transition (case-sensitive)')
+    parse.add_argument('-r', '--resolution', type=str, 
                         help='Transition resolution code, default="Field Cleanup May 2024"')
     parse.add_argument('-C', '--comment', type=str, default="Issue status modified via JiraAPI",
                         help='Transition comment')
     parse.add_argument('-s', '--silent', action='store_true', 
                         help='Silent mode')
+    parse.add_argument('-b', '--sandbox', action='store_true', 
+                        help="Enable debug messages")
     parse.add_argument('-d', '--debug', action='store_true', 
                         help="Enable debug messages")
 
     return parse.parse_args()
+
+
+def summarise_issue(args, server):
+    '''
+    '''
+    issue = issues.ISSUES(inifile=args.config, server=server)
+    issue.get_issue(args.issue)
+    print(issue.summarise_issue())
+
+    return
+
+
+def summarise_file(args, server):
+    '''
+    '''
+    results:list = []
+
+    JIRA  = issues.ISSUES(inifile=args.config, server=server)
+    with open(args.file) as f:
+        for line in f:
+            line = line.rstrip()
+            JIRA.get_issue(line)
+            summary = JIRA.summarise_issue()
+            results.append(summary)
+            logging.info(summary)
+    
+    return results
+
+
+def csv_output(data, out:str = ''):
+    '''
+    '''
+    if out:
+        outfile = open(out, 'w', newline='')
+    else:
+        outfile = sys.stdout
+    
+    csvkeys = data[0].keys()
+
+    csvfile = csv.DictWriter(outfile, csvkeys)
+    csvfile.writeheader()
+    for line in data:
+        csvfile.writerow(line)
+
+    return
+
+
+def issue_migration(args, server):
+    '''
+    '''
+    status:bool = False
+
+    JIRA = migration.MIGRATE_ISSUE(issue=args.issue,
+                                    inifile=args.config,
+                                    server=server)
+    if JIRA.migrate_issue():
+        logging.info(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
+        status = True
+    else:
+        logging.info(f'Failed to migrate issue: {JIRA.src.issue.key}')
+        status = False
+
+    return status
+
+def bulk_migration(args, server):
+    '''
+    '''
+    try:
+        f = open(args.file)
+        for line in f:
+            line = line.rstrip()
+            issue_migration(args, server)
+    except FileNotFoundError:
+        logging.error(f'File {args.file} not found.')
+        raise
+
+    return
 
 
 def main():
@@ -244,20 +332,59 @@ def main():
             format='%(message)s',
             handlers=handlers
             )
+    
+    if args.sandbox:
+        server = 'https://infoblox-sandbox-129.atlassian.net'
+    else:
+        server = None
 
+    # Match args and process appropriately
+    match (args.issue, args.file, args.summary, args.migrate, args.transition):
 
+        # Summarise Issue
+        case (args.issue, None, True, False, _):
+            summarise_issue(args, server)
+        
+        # Summarise issues from file
+        case (None, args.file, True, False, _):
+            summary = summarise_file(args, server)
+            csv_output(summary, out=args.output)
+        
+        # Migrate Issue
+        case (args.issue, None, False, True, _):
+            issue_migration(args, server)
+
+        # Migrate issues from file
+        case (None, args.file, False, True, _):
+            bulk_migration(args, server)
+        
+        # Transition Issue
+        case (args.issue, None, False, False, args.transition):
+            process_issue(config=args.config,
+                          issue=args.issue,
+                          transition=args.transition,
+                          resolution=args.resolution,
+                          comment=args.comment)
+
+        # Transition issues from file
+        case (None, args.file, False, False, args.transition):
+            process_file(in_file=arg.file,
+                         config=args.config,
+                         issue=args.issue,
+                         transition=args.transition,
+                         resolution=args.resolution,
+                         comment=args.comment)
+
+        case _:
+            print('no matches')
+
+    '''
     if args.issue:
-        JIRA = migration.MIGRATE_ISSUE(issue=args.issue,
-                                       inifile='/Users/marrison/Projects/configs/jira.ini', 
-                                       server='https://infoblox-sandbox-129.atlassian.net')
-        if JIRA.migrate_issue():
-            print(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
-        else:
-            print(f'Failed to migrate issue: {JIRA.src.issue.key}')
 
     elif args.file:
         JIRA.migrate_issue()
 
+    '''
     return
 
 

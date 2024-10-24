@@ -1,0 +1,175 @@
+key,status,summary,priority
+RFE-294,Under Consideration,Allow search option that 'contains' string; smart folder or filters,P1
+RFE-502,Under Consideration,Ability to set DHCP options globally or Grid/Member level but selectively unset or leave blank/remove at a lower level,P1
+RFE-938,Not Under Consideration,Ability to add Bulk Hosts in an IPV6 network.,P1
+RFE-1490,Under Consideration,Dynamic Extensible Attributes (EA),P3
+RFE-1491,Not Under Consideration,Ability to assign a the same ip address to multiple MAC address,P3
+RFE-2356,Not Under Consideration,GUI should reposition itself if we are clicking on the Back button in browser,P3
+RFE-2510,Not Under Consideration,Request for DHCPv6 Failover Support,P3
+RFE-3738,Under Consideration,More IPv6 Reports needed in the Reporting Appliance,P3
+RFE-4701,Planned,IPv6 Dynamic Reverse Mapping aka Synthetized Reverse DNS,P2
+RFE-5289,Under Consideration,Ability to export/forward splunk data to an external splunk server,P2
+RFE-5573,Not Under Consideration,Feature to enhance the Grid Upgrade process (In scheduled and sequential upgrade) to minimize the service interruption.,P3
+RFE-5580,Not Under Consideration,"Ability to filter based on ""state"" of the lease in the ""Current Leases"" tab.",P3
+RFE-6644,Not Under Consideration,Support for integration with a password vault (CyberArk),P1
+RFE-6645,Planned,Accept and use EDNS-Client-Subnet (ECS) in queries to reduce aggregation against ADP rules,P1
+RFE-6820,Under Consideration,Basic Search for DNS Name should find Host Aliases,P1
+RFE-6873,Planned,DHCPv6 Fixed Address / Host Address based on the value of RFC 6939,P1
+RFE-7048,Development,Add IPv6 support to TACACS+,P1
+RFE-7517,Under Consideration,"API and RESTful WAPI call for Restart,Reboot,Shutdown,Force HA failover,Restart GUI.",P3
+RFE-7535,Under Consideration,DTC HTTP\HTTPS Add Login Credentials to Health Check,P3
+RFE-7650,Under Consideration,MGM and GM GUI Parities,P3
+RFE-7678,Planned,New Report for displaying TCP DNS Usage,P3
+RFE-8004,Not Under Consideration,External Backup for rotated debug logs (infoblox.log files),P2
+RFE-8054,Closed,Host name/FQDN support for address/server certificate used in secure TCP transport for external syslog server,P3
+RFE-8091,Not Under Consideration,IPV4 Filter Option Default and Column View,P3
+RFE-8248,Under Consideration,Azure vDiscovery Request: Subnets with CIDR equal to the Virtual Network CIDR are not supported,P3
+RFE-8425,Under Consideration,Graceful DNSSEC un-signing of a sub-zone,P3
+RFE-8543,Under Consideration,Throttle Threat Protection logging longer than 1/sec,P3
+RFE-8635,Under Consideration,Inactive IP address report does not work correctly,P3
+RFE-8680,Development,vDiscovery feature to perform discovery across multiple AWS accounts,P3
+RFE-8856,Not Under Consideration,Monitor Number of active API/GUI Sessions,P3
+RFE-8925,Under Consideration,max RPZ entries per member model usage display and enforcement,P3
+RFE-9219,Closed,WAPI DHCP Lease object - searchable binding_state,P3
+RFE-9282,Under Consideration,NIOS Prometheus streaming telemetry support,P3
+RFE-9322,Not Under Consideration,Enable SNMP trap & email notification when DTC resources go down,P3
+RFE-9554,Under Consideration,NIOS Database Encryption for vNIOS Cloud Members,P3
+RFE-9673,Under Consideration,CSP MSP funcionality,P3
+RFE-9683,Under Consideration,Support for 'Required' flags in both CSV and WAPI,P2
+RFE-9738,Under Consideration,"Feature to automatically group devices based on Type,OS etc in NetMRI",P3
+RFE-9738,Under Consideration,"Feature to automatically group devices based on Type,OS etc in NetMRI",P3
+RFE-9812,Not Under Consideration,Use join function on the grid via the WAPI over MGMT interface,P3
+RFE-9829,Under Consideration,"Ability to modify, edit and delete Cloud objects regardless of delegation",P2
+RFE-10145,Under Consideration,Charter - Support for Versa SDN/SD-WAN engine in Network Insight,P3
+RFE-10175,Closed,Accelerated FastPath for Azure Public Cloud ,P2
+RFE-10407,Not Under Consideration,ADFS SSO Authentication in NIOS - Support ADFS SSO as IDP type in SAML 2.0 Authentication,P3
+RFE-10444,Under Consideration,Support for DNS over HTTP/3,P3
+RFE-10495,Under Consideration,Network Insight collects Certificate Information during discovery,P3
+RFE-10579,Under Consideration,200324-000017 | AVL List GmbH | View BloxOne DDI reports on NIOS reporting server,P3
+RFE-10646,Development,Support for ExternalDNS,P3
+RFE-10660,Under Consideration,Ability to Disable HTTPS Certificate Regeneration for Mismatched certificates - Required for DoT/DoH anycast,P3
+RFE-10963,Not Under Consideration,API call for GMC promotion,P3
+RFE-11059,Not Under Consideration,Network Time Security for the Network Time Protocol (RFC-8915),P3
+RFE-11092,Planned,Auto-create IPAM records for all Grid member interfaces,P3
+RFE-11119,Closed,"Every users must select the group to authenticate by itself and an option to select ""Match all groups""",P3
+RFE-11130,Under Consideration,Ability to use DNS integrity check if stealth name servers configured for the zone,P3
+RFE-11233,Under Consideration,DNSSEC: Resolve Scalability issues with large signed zones.,P3
+RFE-11252,Under Consideration,"DoH/DoT service visibility, reporting and logs",P3
+RFE-11443,Closed,To improve syslog writing process,P3
+RFE-11535,Under Consideration,Support for VxLAN Management,P3
+RFE-11542,Under Consideration,Support for vnios reporting appliance on GCP public cloud,P3
+RFE-11551,Under Consideration,vNIOS Azure Private Link Endpoints vDiscovery,P3
+RFE-11693,Not Under Consideration,NIOS HA solution to work over OSI Layer 3 allowing DC to DC failover scenario (no stretched Layer 2 VLAN),P3
+RFE-11858,Closed,00327440 | AIST | Cannot set an alias email address in BloxOne Threat Defense Cloud Integration,P3
+RFE-11858,Closed,00327440 | AIST | Cannot set an alias email address in BloxOne Threat Defense Cloud Integration,P3
+RFE-11872,Not Under Consideration,Add schedule ability to CSV import,P4
+RFE-11920,Not Under Consideration,DNS Zone Transfer over TLS (XoT),P3
+RFE-11965,Under Consideration,DNSTAP in Bind,P3
+RFE-12012,Development,vDiscovery feature to perform discovery across multiple AWS accounts for AWS Govcloud accounts,P3
+RFE-12100,Planned,NIOS sync with GCP cloud native DNS - Phase 1 (Read only),P3
+RFE-12126,Under Consideration,vDiscovery for AWS Outposts,P1
+RFE-12126,Under Consideration,vDiscovery for AWS Outposts,P1
+RFE-12151,Development,"Enable NIOS HA (High Availability) from within the public cloud (AWS, Azure, GCP, etc.)",P3
+RFE-12286,Under Consideration,NIOS WAPI performance issues,P3
+RFE-12366,Under Consideration,Ability to download recent previous ADP / rulesets Threat Protection rulesets,P3
+RFE-12406,Under Consideration,Anycast DNS cookie,P3
+RFE-12439,Closed,DTC Health Monitor Automatic Failback,P3
+RFE-12440,Closed,Add date/time specification to RFE-7088 (DTC failback),P3
+RFE-12456,Closed,Comprehensive vNIOS Support For Oracle Cloud Infrastructure (OCI),P2
+RFE-12470,Under Consideration,Provide ability to configure an LBDN that points to the apex of a DNSSEC signed zone,P3
+RFE-12519,Not Under Consideration,Indication of individual member status during upgrade and distribution phases for NIOS upgrade.,P3
+RFE-12525,Under Consideration,Configure retention period in Log Files,P2
+RFE-12531,Under Consideration,Support for SVCB and HTTPS Records (TYPE64 and TYPE65) in NIOS,P2
+RFE-12615,Closed,ADP support Nutanix,P3
+RFE-12630,Under Consideration,vDiscovery for Oracle Cloud Infrastructure,P3
+RFE-12645,Not Under Consideration,Create a Network Container the same size as Network in NIOS,P3
+RFE-12659,Closed,Ability to list number of ITEM/object being deleted during confirmation prompt ,P3
+RFE-12669,Not Under Consideration,Ability to notify container/network creation while creating networks to prevent overlap,P3
+RFE-12703,Development,vNIOS support for Intel network card E810.,P2
+RFE-12801,Not Under Consideration,Better checking and fallback when a named.conf or dhcpd.conf is generated which causes protocol services to fail on restart.,P3
+RFE-12804,Planned,Support Extended DNS Errors - RFC 8914,P3
+RFE-12815,Under Consideration,Infoblox integration with Netbox,P5
+RFE-12853,Under Consideration,terraform-provider-infoblox: support for DNS delegation,P3
+RFE-12865,Under Consideration,"Request to have Infoblox AAD support added to the ""Azure Active Directory"" subsection of the Azure Marketplace ",P3
+RFE-12884,Closed,"Terraform-provider-Infoblox: Support for creation of DNS Zones, and Forward Zones",P3
+RFE-12901,Closed,Support IP address in Subject Alternative Name (SAN) of NIOS TLS server certificate,P3
+RFE-12942,Closed,Implement Secure Zero Touch Provisioning in NIOS,P3
+RFE-12953,Closed,GMC-promotion shall be non-service-affecting,P3
+RFE-12964,Not Under Consideration,"Make API calls work better behind a ""load balancer""",P3
+RFE-12976,Closed,TCP support for DNS Cache Acceleration,P1
+RFE-12979,Under Consideration,Support Forwarding from B1TD Cloud to DHS CISA Protective DNS Service,P3
+RFE-13015,Under Consideration,To support TOSCA to model NFV descriptors (SOL001 & SOL004),P3
+RFE-13017,Under Consideration,Update NIOS with new Infoblox branding,P3
+RFE-13025,Planned,SDN: Silver Peak Support for Network Insight,P3
+RFE-13026,Planned,SDN: VeloCloud Support for Network Insight,P3
+RFE-13032,Under Consideration,Equinix Fabric (Cisco UCS OpenStack),P2
+NIOSRFE-113,Done,Re-factor NIOS DTC GUI for performance,P3
+RFE-13112,Closed,Ability to specify name instead of IP when configuring target destinations on NIOS Logging settings,P3
+RFE-13120,Not Under Consideration,NIOS/BloxOne to support Privileged Identity Management (PIM),P3
+RFE-13146,Not Under Consideration,Enable logging of rpz re-writes to DNSTAP,P3
+RFE-13170,Under Consideration,Request for improved public IB-FLEX documentation for customer accessibility,P3
+RFE-13180,Not Under Consideration,VMWare certification TCI 3.0 - ESXi 8.0,P3
+RFE-13181,Under Consideration,Compatibility and certification test for the new Generation Intel NIC cards E810-XXVDA2 (successor for XXV710),P3
+RFE-13182,Not Under Consideration,Ability to change DNSSEC NSEC type at zone level ,P3
+RFE-13191,Under Consideration,IPAM Support for vRO/vRA 8.12,P2
+RFE-13201,Not Under Consideration,API ability to retain subzone while deleting parent zone ,P3
+RFE-13201,Not Under Consideration,API ability to retain subzone while deleting parent zone ,P3
+RFE-13226,Not Under Consideration,Alert when top processes reaches certain thresholds,P3
+RFE-13231,Not Under Consideration,Metrics collection endpoint support - Prometheus compatible,P2
+RFE-13236,Under Consideration,Send WAPI HTTP logs in syslog,P2
+RFE-13273,Not Under Consideration,Azure vDiscovery for instances with multiple NICs ,P3
+RFE-13312,Not Under Consideration,Support for IPv6 on vNIOS in GCP,P3
+RFE-13317,Not Under Consideration,Improvement to DTC caching bahavior for RRSIG records,P2
+RFE-13324,Not Under Consideration,Anycast protocol status indicator within GUI  ,P3
+RFE-13373,Closed,GCVE official support for VMWare on GCP,P2
+RFE-13378,Not Under Consideration,IB-FLEX vNIOS NVFI validation Azure Nexus (CBL Mariner),P3
+RFE-13379,Under Consideration,User Selectable Group Matching ,P1
+RFE-13382,Incoming,Unidentified network discrepancy using Network Insight,P3
+RFE-13384,Under Consideration,NIOS Terraform Existing IP Reservation Work Around,P3
+RFE-13398,Under Consideration,Form neighbor relationships using MAC adddress of Virtual Interfaces in forwarding table.,P3
+RFE-13401,Not Under Consideration,Google SAML ,P3
+RFE-13417,Under Consideration,NIOS GUI notification to indicate that DNS fallback is triggered,P3
+RFE-13424,Under Consideration,Enhancement to user-data/day-zero configuration to support cloud-init injection of admin user ssh-key instead of plain text password,P1
+RFE-13441,Planned,GMC re-connection group improvements,P3
+RFE-13448,Under Consideration,DNS Health Check monitoring,P3
+RFE-13456,Need Info,NIOS to provide a Dashboard/Report for inbound and Outbound API health and status,P3
+RFE-13468,Under Consideration,GM HA: Create passive>active notification during inline replication,P3
+RFE-13499,Under Consideration,Add EA inheritance support in Ansible NIOS modules.,P3
+RFE-13521,Incoming,NIOS - Show which probe collected a device via Discovery Status,P3
+RFE-13530,Incoming,Ability to configure MS Mgmt for DNS Sync when using Delgated Name Server Group,P2
+RFE-13544,Not Under Consideration,Prevent NIOS from filling disk up with core dump files,P3
+RFE-13560,Under Consideration,Discovery for IPs used by GKE (Google Kubernetes Engine) ,P3
+RFE-13599,Incoming,vDiscovery of more assets type in Public Cloud,P1
+RFE-13605,Not Under Consideration,IPAM Flat View w/Containers,P3
+RFE-13630,Not Under Consideration,Qualify Cisco (VSS) Virtual Switching Systems Support,P3
+RFE-13645,Not Under Consideration,"DNS Zone or DNS Record when created, by default is disabled but gives you the ability to enable the object during the workflow process.",P3
+RFE-13665,Not Under Consideration,Request to have individual DTC server health check information included in the WAPI call for DTC pools,P3
+RFE-13674,Under Consideration,"Case# 00415535 | Red Hat, Inc. | Supportability for the low-end appliance models like IB-V815. IB-V825, IB-V1415, IB-V1425 and IB-V2215 to be deployed on the Red Hat OpenShift Platform.",P3
+RFE-13687,Not Under Consideration,"For the same DNS Zone, some members can be authoritative and others forwarders",P3
+RFE-13691,Incoming,Network Insight Support for NSX-T,P3
+RFE-13732,Closed,terraform-provider-infoblox: support for DNS Conditional Forwarder zones,P3
+RFE-13762,Planned,Support for 'concat' in DHCP Option Logic,P2
+RFE-13766,Under Consideration,X6 hardware Data at Rest Encryption,P3
+RFE-13775,Under Consideration,New 25G SFP Support for X6,P2
+RFE-13776,Not Under Consideration,DHCP utilization calculation is not currently supported for any ranges inside the MS server who are assigned to failover.,P2
+RFE-13779,Incoming,Devices by Type widget in Security Dashboard shows no data in the relevant OS versions but in Unknown when using DFP as the source,P3
+RFE-13786,Under Consideration,"If any of the NICs experiences a failure, failover should be initiated.",P3
+RFE-13799,Not Under Consideration,Ability to create a Subnet when an Identical Network container exists ,P1
+RFE-13804,Not Under Consideration,NIOS - API call for seeing which keys are being utilized in LUNA HSM for DNSSEC,P3
+RFE-13809,Incoming,Notify when a PSU is removed from a dual PSU appliance,P3
+RFE-13834,Under Consideration,Discovered MAC Conflict Not Raised If Host Record Isn’t DHCP Enabled,P3
+RFE-13844,Under Consideration,Terraform provider - Reprovision deleted objects,P3
+RFE-13856,Closed,Allow Port Bonding on BloxOne Appliances,P3
+RFE-13864,Under Consideration,PAYGO Licensing for NIOS,P3
+RFE-13866,Need Info,00434535 | Telstra Limited | Ability to modify the DNSTAP Identity string on grid-wide and member level ,P3
+RFE-13875,Under Consideration,Redundant GSS-TSIG Update from Infoblox DHCP to Microsoft DNS,P3
+RFE-13879,Planned,Guardrails for NIOS query logging,P1
+RFE-13883,Closed,Terrafrom Plugin for NIOS needs an immutable reference id to survive state drift,P3
+RFE-13918,Not Under Consideration,NIOS to support the latest authentication algorithms for SNMPv3 according to RFC 7860 including HMAC SHA-512,P3
+RFE-13925,Under Consideration,Support DFP operation for IPv6-only grid members,P3
+RFE-13926,Not Under Consideration,Provide warning in 'Member' / 'Grid Properties' > CSP Config,P3
+RFE-13927,Under Consideration,New 40G SFP Support for X6,P3
+RFE-13955,Closed,Support NIOS 9.0.4 on vSphere ESXi8.0u2,P3
+RFE-13970,Incoming,"Cloud Zombie, abandoned, low traffic cloud work load discovery and report",P3
+RFE-14355,Incoming,Add Data Connector option to produce legacy NIOS syslog format,P3
+RFE-14377,Not Under Consideration,DTC: NIOS support for entering userID/password as separate items for URL authentication,P3

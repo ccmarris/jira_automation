@@ -54,6 +54,7 @@ import jira
 import jira.exceptions
 from rich import print
 
+_logger = logging.getLogger(__name__)
 
 # Custom Exceptions
 class IniFileSectionError(Exception):
@@ -104,6 +105,10 @@ class ISSUES():
         self.issue:object = None
         self.fields:list = []
         self.field_map:dict = {}
+        self.summary_fields:list = [ 'summary',
+                                     'priority',
+                                     'prospects/Customers' ]
+
         # self.required_fields:dict = {}
 
         if inifile:
@@ -524,6 +529,31 @@ class ISSUES():
             print('No issue selected, use get_issue()')
         
         return
+
+
+    def summarise_issue(self, 
+                        fields:list = []) -> list:
+        '''
+        '''
+        summary:dict = {}
+
+        if not fields:
+            fields = self.summary_fields
+
+        if self.issue:
+            key = self.issue.key
+            summary['key'] = key
+            status = self.status()
+            summary['status'] = status
+
+            if fields:
+                for k in fields:
+                    if k in self.issue.fields.__dict__.keys():
+                        summary[k] = str(getattr(self.issue.fields, k))
+        else:
+            summary = {}
+        
+        return summary
 
 
     def get_comments(self):

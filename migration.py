@@ -55,6 +55,7 @@ import jira
 import jira.exceptions
 from rich import print
 
+_logger = logging.getLogger(__name__)
 
 class MIGRATE_ISSUE():
     '''
@@ -93,50 +94,76 @@ class MIGRATE_ISSUE():
         components:list
         custom_fields:dict
 
-        summary = self.src.issue.fields.summary
-        description = self.normalise_string(self.src.issue.fields.description)
-        project = self.dst_project
-        versions = self.get_versions()
-        
-        # Create components list
-        components = self.build_components()
+        if not self.migrated():
+            summary = self.src.issue.fields.summary
+            description = self.normalise_string(self.src.issue.fields.description)
+            project = self.dst_project
+            versions = self.get_versions()
+            
+            # Create components list
+            components = self.build_components()
 
-        # Build basic dictionary of minimum fields
-        issue_dict = {
-                        "issuetype": { "name": "New Feature" },
-                        "summary": summary,
-                        "description": description,
-                        "project": { "key": project },
-                        "versions": versions,
-                        "components": components
-                    }
+            # Build basic dictionary of minimum fields
+            issue_dict = {
+                            "issuetype": { "name": "New Feature" },
+                            "summary": summary,
+                            "description": description,
+                            "project": { "key": project },
+                            "versions": versions,
+                            "components": components
+                        }
 
-        # Handle Custom Fields
-        custom_fields = self.build_custom_fields()
-        issue_dict.update(custom_fields)
+            # Handle Custom Fields
+            custom_fields = self.build_custom_fields()
+            issue_dict.update(custom_fields)
 
-        logging.debug(f'Issue Dictionary: {issue_dict}')
+            logging.debug(f'Issue Dictionary: {issue_dict}')
 
-        # Create Destination Issue
-        if self.dst.create_issue(issue_dict=issue_dict):
-            status = True
-            # Add Origin Information as a comment
-            if self.add_origin_data():
-                logging.info('Origin data added')
-            else:
-                logging.error('Origin data not added')
-            # Check whether we copy existing comments from source issue
-            if include_comments:
-                self.copy_comments()
-            if additional_fields:
-                if self.add_additional_fields(fieldlist=additional_fields):
-                    logging.info(f'Successfully added: {additional_fields}')
+            # Create Destination Issue
+            if self.dst.create_issue(issue_dict=issue_dict):
+                status = True
+                # Add Origin Information as a comment
+                if self.add_origin_data():
+                    logging.info('Origin data added')
                 else:
-                    logging.error(f'Failed to add: {additional_fields}')
+                    logging.error('Origin data not added')
+                # Check whether we copy existing comments from source issue
+                if include_comments:
+                    self.copy_comments()
+                if additional_fields:
+                    if self.add_additional_fields(fieldlist=additional_fields):
+                        logging.info(f'Successfully added: {additional_fields}')
+                    else:
+                        logging.error(f'Failed to add: {additional_fields}')
+            else:
+                status = False
         else:
+            logging.error(f'Previously migrated')
             status = False
 
         return status
+
+
+    def migrated(self, project:str = 'IFR'):
+        '''
+        '''
+        status:bool = False
+
+        jql_query = f'"RFE #[Short text]" ~ "{self.src.issue.key}" AND project = "{project}"'
+
+        try:
+            issues = self.dst.jira_session.search_issues(jql_query)
+
+            if issues:
+                for issue in issues:
+                    logging.warning(f'{self.src.issue.key} already migrated as {issue.key}')
+                status = True
+        except jira.exceptions.JIRAError as Err:
+            logging.error(Err)
+            status = True
+        
+        return status
+
 
 
     def normalise_string(self, input_str:str) -> str:
