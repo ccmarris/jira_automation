@@ -165,7 +165,7 @@ class ISSUES():
             try:
                 cfg.read(filename)
             except configparser.Error as err:
-                logging.error(err)
+                _logger.error(err)
 
             # Look for BloxOne section
             if 'JIRA' in cfg:
@@ -173,14 +173,14 @@ class ISSUES():
                     # Check for key in BloxOne section
                     if key in cfg['JIRA']:
                         config[key] = cfg['JIRA'][key].strip("'\"")
-                        logging.debug(f'Key {key} found in {filename}: {config[key]}')
+                        _logger.debug(f'Key {key} found in {filename}: {config[key]}')
                     else:
-                        logging.error(f'Key {key} not found in BloxOne section.')
+                        _logger.error(f'Key {key} not found in BloxOne section.')
                         raise IniFileKeyError(f'Key "{key}" not found within' +
                                 f'[JIRA] section of ini file {filename}')
                         
             else:
-                logging.error(f'No BloxOne Section in config file: {filename}')
+                _logger.error(f'No BloxOne Section in config file: {filename}')
                 raise IniFileSectionError(f'No [BloxOne] section found in ini file {filename}')
             
         else:
@@ -204,8 +204,9 @@ class ISSUES():
         try:
             self.issue = self.jira_session.issue(issue, expand=expand)
             status = True
+            _logger.debug(f'Successfully retrieved {issue}')
         except:
-            logging.error(f'Failed to retrieve issue: {issue}')
+            _logger.error(f'Failed to retrieve issue: {issue}')
             status = False
         return status
 
@@ -218,9 +219,10 @@ class ISSUES():
         try:
             self.issue = self.jira_session.create_issue(fields=issue_dict)
             status = True
+            _logger.debug(f'Successfully created {self.issue}')
         except jira.exceptions.JIRAError as Err:
             status = False
-            logging.error(Err)
+            _logger.error(Err)
 
         return status
         
@@ -249,6 +251,8 @@ class ISSUES():
         if components:
             issue_dict.update(components)
 
+        _logger.debug(f'Created issue dictionary: {issue_dict}')
+
         return issue_dict
 
 
@@ -262,8 +266,9 @@ class ISSUES():
         status:bool = False
         try:
             self.transitions = self.jira_session.transitions(self.issue.id)
+            _logger.debug(f'Successfully retrieved transitions for: {self.issue}')
         except:
-            logging.error(f'Failed to retrieve transitions for: {self.issue}')
+            _logger.error(f'Failed to retrieve transitions for: {self.issue}')
             status = False
         return status
     
@@ -279,8 +284,9 @@ class ISSUES():
         try:
             self.resolution_key = self.get_field_id(self.resolution_field)
             status = True
+            _logger.debug(f'Successfully retrieved resolution key: {self.resolution_key}')
         except:
-            logging.error(f'Failed to retrieve resolution field for: {self.issue}')
+            _logger.error(f'Failed to retrieve resolution field for: {self.issue}')
             status = False
         return status
 
@@ -325,7 +331,7 @@ class ISSUES():
                 break
         
         if not id:
-            logging.info(f'Cannot {transition} {self.issue.key} transition not available')
+            _logger.warning(f'Cannot {transition} {self.issue.key} transition not available')
         
         return id
 
@@ -340,19 +346,19 @@ class ISSUES():
         for r in trns:
             if r.get('name') == transition:
                 av = r['fields'][self.resolution_key]['allowedValues']
-                logging.debug(f'Found {transition} for issue')
+                _logger.debug(f'Found {transition} for issue')
                 # Find the id of the allowed resolution
                 # Don't know why these are different to the ids 
                 # provided by JIRA.resolutions()
                 for v in av:
                     if v.get('value') == resolution:
                         id = v.get('id')
-                        logging.debug(f'Found {resolution} for transition')
+                        _logger.debug(f'Found {resolution} for transition')
                         break
                 break
 
         if not id:
-            logging.warning(f'Cannot find {resolution} id for {self.issue.key}')
+            _logger.warning(f'Cannot find {resolution} id for {self.issue.key}')
         
         return id
 
@@ -374,7 +380,7 @@ class ISSUES():
                                             comment=comment)
             status = True
         except jira.exceptions.JIRAError as err:
-            logging.error(err)
+            _logger.error(err)
             status = False
 
         return status
@@ -416,7 +422,7 @@ class ISSUES():
         try:
             fields = self.get_fields()
         except:
-            logging.error('Failed to retrieve field mappings')
+            _logger.error('Failed to retrieve field mappings')
             status = False
 
         if fields:
@@ -425,7 +431,7 @@ class ISSUES():
                 fmap.update( { f.get('id'): f.get('name'),
                                f.get('name'): f.get('id')} )
         else:
-            logging.error('Field mapping empty')
+            _logger.error('Field mapping empty')
             status = False
 
         self.field_map = fmap
@@ -574,10 +580,10 @@ class ISSUES():
         
         try:
             self.issue.update(fields={rfe_field: value})
-            logging.debug(f'{rfe_field}: {value}')
+            _logger.debug(f'{rfe_field}: {value}')
             status = True
         except jira.JIRAError as err:
-            logging.debug({err})
+            _logger.debug({err})
             status = False
         
         return status
@@ -598,12 +604,12 @@ class ISSUES():
         try:
             if self.jira_session.add_remote_link(self.issue.key, web_link):
                 status = True
-                logging.info(f'Sucessfully add web link to {self.issue.key}')
+                _logger.info(f'Sucessfully add web link to {self.issue.key}')
             else:
                 status = False
         except jira.exceptions.JIRAError as err:
-            logging.error(f'Failed add web link to {self.issue.key}')
-            logging.error(err)
+            _logger.error(f'Failed add web link to {self.issue.key}')
+            _logger.error(err)
             status = False
         
         return status
@@ -618,12 +624,12 @@ class ISSUES():
         try:
             self.jira_session.add_comment(self.issue.key, body=comment)
             status = True
-            logging.info(f'Added comment to {self.issue.key}')
-            logging.debug(f'Comment: {comment}')
+            _logger.info(f'Added comment to {self.issue.key}')
+            _logger.debug(f'Comment: {comment}')
         except jira.exceptions.JIRAError as err:
-            logging.error(f'Failed add comment to {self.issue.key}')
-            logging.debug(f'Comment: {comment}')
-            logging.error(err)
+            _logger.error(f'Failed add comment to {self.issue.key}')
+            _logger.debug(f'Comment: {comment}')
+            _logger.error(err)
             status = False
         
         return status

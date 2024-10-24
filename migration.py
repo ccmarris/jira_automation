@@ -117,28 +117,28 @@ class MIGRATE_ISSUE():
             custom_fields = self.build_custom_fields()
             issue_dict.update(custom_fields)
 
-            logging.debug(f'Issue Dictionary: {issue_dict}')
+            _logger.debug(f'Issue Dictionary: {issue_dict}')
 
             # Create Destination Issue
             if self.dst.create_issue(issue_dict=issue_dict):
                 status = True
                 # Add Origin Information as a comment
                 if self.add_origin_data():
-                    logging.info('Origin data added')
+                    _logger.info('Origin data added')
                 else:
-                    logging.error('Origin data not added')
+                    _logger.error('Origin data not added')
                 # Check whether we copy existing comments from source issue
                 if include_comments:
                     self.copy_comments()
                 if additional_fields:
                     if self.add_additional_fields(fieldlist=additional_fields):
-                        logging.info(f'Successfully added: {additional_fields}')
+                        _logger.info(f'Successfully added: {additional_fields}')
                     else:
-                        logging.error(f'Failed to add: {additional_fields}')
+                        _logger.error(f'Failed to add: {additional_fields}')
             else:
                 status = False
         else:
-            logging.error(f'Previously migrated')
+            _logger.error(f'Previously migrated')
             status = False
 
         return status
@@ -156,10 +156,10 @@ class MIGRATE_ISSUE():
 
             if issues:
                 for issue in issues:
-                    logging.warning(f'{self.src.issue.key} already migrated as {issue.key}')
+                    _logger.warning(f'{self.src.issue.key} already migrated as {issue.key}')
                 status = True
         except jira.exceptions.JIRAError as Err:
-            logging.error(Err)
+            _logger.error(Err)
             status = True
         
         return status
@@ -191,7 +191,7 @@ class MIGRATE_ISSUE():
 
         # Update 'RFE #' custom field
         if self.dst.update_field(field=custom_field, value=rfe):
-            logging.info(f'Added RFE {rfe} to field {custom_field}')
+            _logger.info(f'Added RFE {rfe} to field {custom_field}')
         
             # Build comment
             comment = ( f'Origin: {rfe}, \nCreated by: {reporter}, '
@@ -200,11 +200,11 @@ class MIGRATE_ISSUE():
             if self.dst.add_comment(comment=comment):
                 status = True
             else:
-                logging.error(f'Failed to add origin data')
+                _logger.error(f'Failed to add origin data')
                 status = False
 
         else:
-            logging.error(f'Failed to add RFE {rfe} to field {custom_field}')
+            _logger.error(f'Failed to add RFE {rfe} to field {custom_field}')
             status = False
 
         return status
@@ -232,7 +232,7 @@ class MIGRATE_ISSUE():
         else:
             src_versions = [ { 'name': 'NIOS 8.6.5' } ]
 
-        logging.debug(f'Processed versions: {src_versions}')
+        _logger.debug(f'Processed versions: {src_versions}')
         
         return src_versions
 
@@ -346,14 +346,14 @@ class MIGRATE_ISSUE():
             fname = self.dst.field_map.get(f)
             custom_fields.update(self.process_custom_field(fname))
         
-        logging.debug(f'Additional field results: {custom_fields}')
+        _logger.debug(f'Additional field results: {custom_fields}')
 
         # Consider putting check for self.dst.issue before calling
         try:
             self.dst.issue.update(fields=custom_fields)
             status = True
         except jira.exceptions.JIRAError as err:
-            logging(f'Adding additional fields failed: {err}')
+            _logger.error(f'Adding additional fields failed: {err}')
             status = False
         
         return status
