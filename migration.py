@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.1'
+__version__ = '0.1.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -59,6 +59,7 @@ _logger = logging.getLogger(__name__)
 
 class MIGRATE_ISSUE():
     '''
+    Note this returns an assertion error if the source issue is not found
     '''
     def __init__(self, 
                  issue:str,

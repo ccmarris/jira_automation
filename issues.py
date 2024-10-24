@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.5'
+__version__ = '0.2.6'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -128,6 +128,7 @@ class ISSUES():
                                           server=self.server)
             # Get fields and mappings
             self.get_fields()
+
             self.create_field_map()
 
         except:
@@ -267,6 +268,7 @@ class ISSUES():
         try:
             self.transitions = self.jira_session.transitions(self.issue.id)
             _logger.debug(f'Successfully retrieved transitions for: {self.issue}')
+            status = True
         except:
             _logger.error(f'Failed to retrieve transitions for: {self.issue}')
             status = False
@@ -363,7 +365,11 @@ class ISSUES():
         return id
 
 
-    def transition_issue(self, t_id:str, r_id:str = '', comment:str = '') -> bool:
+    def transition_issue(self, 
+                         t_id:str, 
+                         r_id:str = '', 
+                         comment:str = '',
+                         target:str = '') -> bool:
         '''
         '''
         status:bool = False
@@ -373,6 +379,12 @@ class ISSUES():
                 self.jira_session.transition_issue(self.issue.key,
                                             transition=t_id, 
                                             fields={self.resolution_key: { 'id': r_id}},
+                                            comment=comment)
+            elif target:
+                fieldname = self.field_map.get('Target Release')
+                self.jira_session.transition_issue(self.issue.key,
+                                            transition=t_id, 
+                                            fields={fieldname: [{'name': target }] },
                                             comment=comment)
             else:
                 self.jira_session.transition_issue(self.issue.key,

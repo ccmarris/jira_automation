@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -64,8 +64,10 @@ from rich import print
 def process_issue(config:str, 
                 issue:str, 
                 transition:str, 
-                resolution:str,
-                comment:str) -> bool:
+                resolution:str=None,
+                target:str=None,
+                comment:str=None,
+                server:str=None) -> bool:
     '''
     '''
     status:bool = False
@@ -74,8 +76,10 @@ def process_issue(config:str,
 
 
     try:
-        r = issues.ISSUES(inifile=config)
+        r = issues.ISSUES(inifile=config, server=server)
         r.get_issue(issue)
+        r.get_transitions()
+        r.get_resolution_key()
     
         current_status = r.status()
         current_status_id = r.status_id()
@@ -89,9 +93,13 @@ def process_issue(config:str,
                 status = r.transition_issue(t_id=transition_id,
                                         r_id=resolution_id,
                                         comment=comment)
+            elif target:
+                status = r.transition_issue(t_id=transition_id,
+                                            target=target,
+                                            comment=comment)
             else:
                 status = r.transition_issue(t_id=transition_id,
-                                        comment=comment)
+                                            comment=comment)
         else:
             # Transition not possible
             status = False
@@ -120,7 +128,9 @@ def process_file(in_file:str,
                  config:str,
                  transition:str,
                  resolution:str = '',
-                 comment:str =''):
+                 target:str = '',
+                 comment:str ='',
+                 server:str = None):
     '''
     '''
     count:int = 0
@@ -134,7 +144,9 @@ def process_file(in_file:str,
                         issue=issue,
                         transition=transition,
                         resolution=resolution,
-                        comment=comment):
+                        target=target,
+                        comment=comment,
+                        server=server):
                 
                 success_count += 1
             else:
@@ -211,6 +223,8 @@ def parseargs():
                         help='Transition (case-sensitive)')
     parse.add_argument('-r', '--resolution', type=str, 
                         help='Transition resolution code, default="Field Cleanup May 2024"')
+    parse.add_argument('-T', '--target', type=str, 
+                        help='Target release for transition to Planned')
     parse.add_argument('-C', '--comment', type=str, default="Issue status modified via JiraAPI",
                         help='Transition comment')
     parse.add_argument('-s', '--silent', action='store_true', 
@@ -268,20 +282,40 @@ def csv_output(data, out:str = ''):
     return
 
 
-def issue_migration(args, server):
+def issue_migration(args, server, issue:str = None):
     '''
     '''
     status:bool = False
+    JIRA:object = None
 
-    JIRA = migration.MIGRATE_ISSUE(issue=args.issue,
-                                    inifile=args.config,
-                                    server=server)
-    if JIRA.migrate_issue():
-        logging.info(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
-        status = True
+    if issue:
+        try:
+            JIRA = migration.MIGRATE_ISSUE(issue=issue,
+                                            inifile=args.config,
+                                            server=server)
+            logging.info(f'Migrating specified issue {issue}')
+        except AssertionError:
+            logging.error(f'{issue} not found, aborting migration.')
+            status = False
+            JIRA = None
     else:
-        logging.info(f'Failed to migrate issue: {JIRA.src.issue.key}')
-        status = False
+        try:
+            JIRA = migration.MIGRATE_ISSUE(issue=args.issue,
+                                            inifile=args.config,
+                                            server=server)
+            logging.info(f'Migrating issue {args.issue}')
+        except AssertionError:
+            logging.error(f'{args.issue} not found, aborting migration.')
+            status = False
+            JIRA = None
+
+    if JIRA:
+        if JIRA.migrate_issue():
+            logging.info(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
+            status = True
+        else:
+            logging.info(f'Failed to migrate issue: {JIRA.src.issue.key}')
+            status = False
 
     return status
 
@@ -291,8 +325,8 @@ def bulk_migration(args, server):
     try:
         f = open(args.file)
         for line in f:
-            line = line.rstrip()
-            issue_migration(args, server)
+            issue = line.rstrip()
+            issue_migration(args, server, issue=issue)
     except FileNotFoundError:
         logging.error(f'File {args.file} not found.')
         raise
@@ -364,16 +398,19 @@ def main():
                           issue=args.issue,
                           transition=args.transition,
                           resolution=args.resolution,
-                          comment=args.comment)
+                          target=args.target,
+                          comment=args.comment,
+                          server=server)
 
         # Transition issues from file
         case (None, args.file, False, False, args.transition):
-            process_file(in_file=arg.file,
+            process_file(in_file=args.file,
                          config=args.config,
-                         issue=args.issue,
                          transition=args.transition,
                          resolution=args.resolution,
-                         comment=args.comment)
+                         target=args.target,
+                         comment=args.comment,
+                         server=server)
 
         case _:
             print('no matches')
