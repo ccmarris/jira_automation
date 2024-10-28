@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20240520
+ Date Last Updated: 20241024
 
  Todo:
 
@@ -42,15 +42,13 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
 
 import logging
 import issues
-import datetime
-import time
 import jira
 import jira.exceptions
 from rich import print
@@ -88,7 +86,7 @@ class MIGRATE_ISSUE():
         '''
         Migrate source Issue to destination Issue
         '''
-        status:bool
+        status:str
         summary:str
         description:str
         project:str
@@ -122,7 +120,7 @@ class MIGRATE_ISSUE():
 
             # Create Destination Issue
             if self.dst.create_issue(issue_dict=issue_dict):
-                status = True
+                status = self.dst.issue.key
                 # Add Origin Information as a comment
                 if self.add_origin_data():
                     _logger.info('Origin data added')
@@ -137,10 +135,10 @@ class MIGRATE_ISSUE():
                     else:
                         _logger.error(f'Failed to add: {additional_fields}')
             else:
-                status = False
+                status = None
         else:
             _logger.error(f'Previously migrated')
-            status = False
+            status = None
 
         return status
 
@@ -225,13 +223,13 @@ class MIGRATE_ISSUE():
                         if self.check_version(version.name):
                             src_versions.append = version.name
                         else:
-                            src_versions.append({ 'name': 'NIOS 8.6.5' })
+                            src_versions.append({ 'name': 'Unknown' })
                     else:
-                            src_versions.append({ 'name': 'NIOS 8.6.5' })
+                            src_versions.append({ 'name': 'Unknown' })
             else:
-                src_versions = [ { 'name': 'NIOS 8.6.5' } ]
+                src_versions = [ { 'name': 'Unknown' } ]
         else:
-            src_versions = [ { 'name': 'NIOS 8.6.5' } ]
+            src_versions = [ { 'name': 'Unknown' } ]
 
         _logger.debug(f'Processed versions: {src_versions}')
         

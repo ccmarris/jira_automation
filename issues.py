@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20240520
+ Date Last Updated: 20241028
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
