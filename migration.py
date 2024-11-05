@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.6'
+__version__ = '0.1.8'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -58,6 +58,7 @@ _logger = logging.getLogger(__name__)
 class MIGRATE_ISSUE():
     '''
     Note this returns an assertion error if the source issue is not found
+
     '''
     def __init__(self, 
                  issue:str,
@@ -85,6 +86,9 @@ class MIGRATE_ISSUE():
                                                 'Prospects/Customers' ]):
         '''
         Migrate source Issue to destination Issue
+
+        Returns:
+            Issue key or None
         '''
         status:str
         summary:str
@@ -93,7 +97,9 @@ class MIGRATE_ISSUE():
         components:list
         custom_fields:dict
 
-        if not self.migrated():
+        migrated = self.migrated()
+
+        if not migrated:
             summary = self.src.issue.fields.summary
             description = self.normalise_string(self.src.issue.fields.description)
             project = self.dst_project
@@ -138,7 +144,7 @@ class MIGRATE_ISSUE():
                 status = None
         else:
             _logger.error(f'Previously migrated')
-            status = None
+            status = f'Previously migrated as: {migrated}'
 
         return status
 
@@ -146,7 +152,7 @@ class MIGRATE_ISSUE():
     def migrated(self, project:str = 'IFR'):
         '''
         '''
-        status:bool = False
+        status:str = ''
 
         jql_query = f'"RFE #[Short text]" ~ "{self.src.issue.key}" AND project = "{project}"'
 
@@ -156,10 +162,11 @@ class MIGRATE_ISSUE():
             if issues:
                 for issue in issues:
                     _logger.warning(f'{self.src.issue.key} already migrated as {issue.key}')
-                status = True
+                    status = issue.key
+                    break
         except jira.exceptions.JIRAError as Err:
             _logger.error(Err)
-            status = True
+            status = f'Jira error: {Err}'
         
         return status
 
@@ -171,8 +178,9 @@ class MIGRATE_ISSUE():
         '''
         outstr:str = ''
 
-        outstr = input_str.replace('\n','')
-        outstr = outstr.replace('\r','')
+        if input_str:
+            outstr = input_str.replace('\n','')
+            outstr = outstr.replace('\r','')
 
         return outstr
 
@@ -186,7 +194,10 @@ class MIGRATE_ISSUE():
         rfe = self.src.issue.key
         created = self.src.issue.fields.created
         updated = self.src.issue.fields.updated
-        reporter = self.src.issue.fields.reporter.displayName
+        if hasattr(self.src.issue.fields.reporter, 'displayName'):
+            reporter = self.src.issue.fields.reporter.displayName
+        else:
+            reporter = ''
 
         # Update 'RFE #' custom field
         if self.dst.update_field(field=custom_field, value=rfe):
@@ -221,7 +232,7 @@ class MIGRATE_ISSUE():
                 for version in versions:
                     if hasattr(version, 'name'):
                         if self.check_version(version.name):
-                            src_versions.append = version.name
+                            src_versions.append({ 'name': version.name })
                         else:
                             src_versions.append({ 'name': 'Unknown' })
                     else:
@@ -394,7 +405,8 @@ class MIGRATE_ISSUE():
                     field_obj = getattr(self.src.issue.fields, alternate)
                     src_value = self.remap_option(field_obj.value)
 
-            processed_field.update( { custom_field_id: { 'value': src_value } } )
+            # processed_field.update( { custom_field_id: { 'value': src_value } } )
+            processed_field.update( { custom_field_id: src_value } )
 
         return processed_field
 
@@ -423,7 +435,8 @@ class MIGRATE_ISSUE():
         mapped_field:str
 
         alt_mappings:dict = {
-                             'Product': 'Product (migrated)',
+                             # 'Product': 'Product (migrated)',
+                             'Product Family': 'Product (migrated)',
                              'Support Cases': 'Support Cases (migrated)',
                              'Prospects/Customers': 'Prospects/Customers (migrated)'
                             }
@@ -446,7 +459,10 @@ class MIGRATE_ISSUE():
         Remap option values or return unchanged
         '''
         mappings:dict = {
-                            "ActiveTrust": "BloxOne TD"
+                            "ActiveTrust Cloud": "BloxOne TD"
+                            # "BloxOne DDI": "UDDI",
+                            # "BloxOne TD": "Infoblox Threat Defense",
+                            # "Network Insight": "NIOS"
                         }
 
         if option in mappings.keys():

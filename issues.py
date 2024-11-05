@@ -105,9 +105,10 @@ class ISSUES():
         self.issue:object = None
         self.fields:list = []
         self.field_map:dict = {}
-        self.summary_fields:list = [ 'summary',
-                                     'priority',
-                                     'prospects/Customers' ]
+        self.summary_fields:list = [ 'Product',
+                                     'Summary',
+                                     'Priority',
+                                     'Prospects/Customers' ]
 
         # self.required_fields:dict = {}
 
@@ -566,8 +567,9 @@ class ISSUES():
 
             if fields:
                 for k in fields:
-                    if k in self.issue.fields.__dict__.keys():
-                        summary[k] = str(getattr(self.issue.fields, k))
+                    fieldname = self.field_map.get(k)
+                    if fieldname in self.issue.fields.__dict__.keys():
+                        summary[k] = str(getattr(self.issue.fields, fieldname))
         else:
             summary = {}
         
@@ -645,3 +647,30 @@ class ISSUES():
             status = False
         
         return status
+
+
+    def query_field(self, 
+                    project:str = 'IFR',
+                    field:str = '',
+                    value:str = '' ) -> list:
+        '''
+        '''
+        issue_list:list = []
+
+        jql_query = f'"{field}" = "{value}" AND project = "{project}"'
+
+        try:
+            issues = self.jira_session.search_issues(jql_query)
+
+            if issues:
+                for issue in issues:
+                    _logger.debug(f'Matched issue: {issue}')
+                    issue_list.append(issue.key)
+            else:
+                issue_list = []
+
+        except jira.exceptions.JIRAError as Err:
+            _logger.error(Err)
+            issue_list = []
+        
+        return issue_list

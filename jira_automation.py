@@ -310,11 +310,17 @@ def issue_migration(args, server, issue:str = None):
             JIRA = None
 
     if JIRA:
-        if JIRA.migrate_issue():
-            logging.info(f"Successfully migrated {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
-            status = True
+        response = JIRA.migrate_issue()
+        if response:
+            if 'Previously' not in response:
+                logging.info(f"Successfully submitted {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
+                status = True
+            else:
+                logging.info(f'{response}')
+                status = True
+                
         else:
-            logging.info(f'Failed to migrate issue: {JIRA.src.issue.key}')
+            logging.info(f'Failed to submit issue: {issue}')
             status = False
 
     return status
@@ -425,7 +431,7 @@ def main():
     return
 
 
-### Main ###
+#.## Main ###
 if __name__ == '__main__':
     exitcode = main()
     exit(exitcode)
