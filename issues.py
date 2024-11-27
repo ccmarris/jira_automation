@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20241028
+ Date Last Updated: 20241127
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.7'
+__version__ = '0.3.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -107,6 +107,7 @@ class ISSUES():
         self.field_map:dict = {}
         self.summary_fields:list = [ 'Product',
                                      'Summary',
+                                     'Reporter',
                                      'Priority',
                                      'Prospects/Customers' ]
 
@@ -674,3 +675,41 @@ class ISSUES():
             issue_list = []
         
         return issue_list
+    
+
+    def get_reporter_id(self):
+        '''
+        '''
+        accountId:str
+
+        if self.issue:
+            accountId = self.issue.fields.reporter.accountId
+            _logger.info(f'Reporter: {accountId}')
+        else:
+            _logger.warning('Use get_issue() to retrieve an issue first')
+            accountId = ''
+        
+        return accountId
+
+
+    def update_reporter(self, accountId:str) -> bool:
+        '''
+        Update the reporter field with the account id supplied
+        '''
+        status: bool = False
+
+        if accountId:
+            reporter = { 'reporter': { 'accountId': accountId } }
+            try:
+                self.issue.update(fields=reporter)
+                _logger.info(f'Issue reporter updated successfully')
+                status = True
+            except jira.exceptions.JIRAError as Err:
+                _logger.debug(Err)
+                status = False
+        
+        else:
+            _logger.warning('No accountId supplied')
+            status = False
+        
+        return status

@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20241024
+ Date Last Updated: 20241127
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.8'
+__version__ = '0.2.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -51,7 +51,6 @@ import logging
 import issues
 import jira
 import jira.exceptions
-from rich import print
 
 _logger = logging.getLogger(__name__)
 
@@ -66,6 +65,13 @@ class MIGRATE_ISSUE():
                  inifile:str = 'jira.ini',
                  server:str = 'https://infoblox.atlassian.net'):
         '''
+        Initialise class
+
+        Parameters:
+            issue: str = Source issue to migrate
+            dst_project: str = Destination project
+            inifile: str = Inifile containing jira api configuration
+            server: str = URL of Jira cloud instance
         '''
         self.src = issues.ISSUES(inifile=inifile, server=server)
         if not self.src.get_issue(issue):
@@ -126,7 +132,8 @@ class MIGRATE_ISSUE():
 
             # Create Destination Issue
             if self.dst.create_issue(issue_dict=issue_dict):
-                status = self.dst.issue.key
+                # status = self.dst.issue.key
+                status = f'{self.src.issue.key} submitted as: {self.dst.issue.key}'
                 # Add Origin Information as a comment
                 if self.add_origin_data():
                     _logger.info('Origin data added')
@@ -141,10 +148,11 @@ class MIGRATE_ISSUE():
                     else:
                         _logger.error(f'Failed to add: {additional_fields}')
             else:
-                status = None
+                status = f'Error creating IFR from {self.src.issue.key}'
         else:
-            _logger.error(f'Previously migrated')
-            status = f'Previously migrated as: {migrated}'
+            _logger.warning(f'Previously migrated')
+            # status = f'Previously migrated as: {migrated}'
+            status = f'{self.src.issue.key} previously migrated as: {migrated}'
 
         return status
 
@@ -164,6 +172,8 @@ class MIGRATE_ISSUE():
                     _logger.warning(f'{self.src.issue.key} already migrated as {issue.key}')
                     status = issue.key
                     break
+            else:
+                status = ''
         except jira.exceptions.JIRAError as Err:
             _logger.error(Err)
             status = f'Jira error: {Err}'
@@ -196,6 +206,7 @@ class MIGRATE_ISSUE():
         updated = self.src.issue.fields.updated
         if hasattr(self.src.issue.fields.reporter, 'displayName'):
             reporter = self.src.issue.fields.reporter.displayName
+            self.copy_reporter()
         else:
             reporter = ''
 
@@ -487,3 +498,42 @@ class MIGRATE_ISSUE():
                 self.dst.jira_session.add_comment(self.dst.issue.key, body)
 
         return
+
+
+    def copy_reporter(self):
+        '''
+        Copy reporter from the src to dst
+        '''
+        status:bool = False
+        accountId:str
+        issue:str
+
+        if self.src.issue and self.dst.issue:
+            accountId = self.src.get_reporter()
+        else: 
+            issue = self.migrated()
+            if self.dst.get_issue(issue):
+                accountId = self.src.get_reporter_id()
+                _logger.debug(f'Account ID: {accountId}')
+            else:
+                accountId = ''
+                _logger.debug(f'Issue {issue} not found.')
+        
+        if accountId:
+            status = self.dst.update_reporter(accountId)
+            if status:
+                _logger.info('Successfully updated reporter')
+            else:
+                _logger.warning('Failed to update reporter')
+        else:
+            _logger.error(f'Issue {self.src.issue.key} has not been migrated')
+            status = False
+        
+        return status
+    
+
+### Main ###
+if __name__ == '__main__':
+    exitcode = main()
+    exit(exitcode)
+## End Main ###

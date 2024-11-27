@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20241024
+ Date Last Updated: 20241127
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -219,6 +219,8 @@ def parseargs():
                         help='Output summary information of input data')
     parse.add_argument('-m', '--migrate', action='store_true', 
                         help='Migrate issue(s)')
+    parse.add_argument('-R', '--reporter', action='store_true', 
+                        help='Update Reporter')
     parse.add_argument('-t', '--transition', type=str, 
                         help='Transition (case-sensitive)')
     parse.add_argument('-r', '--resolution', type=str, 
@@ -325,6 +327,7 @@ def issue_migration(args, server, issue:str = None):
 
     return status
 
+
 def bulk_migration(args, server):
     '''
     '''
@@ -333,6 +336,60 @@ def bulk_migration(args, server):
         for line in f:
             issue = line.rstrip()
             issue_migration(args, server, issue=issue)
+    except FileNotFoundError:
+        logging.error(f'File {args.file} not found.')
+        raise
+
+    return
+
+
+def update_reporter(args, server, issue:str = None):
+                    
+                    
+    '''
+    '''
+    status:bool = False
+    JIRA:object = None
+
+    if not issue:
+        issue = args.issue
+
+    if issue:
+        try:
+            JIRA = migration.MIGRATE_ISSUE(issue=issue,
+                                            inifile=args.config,
+                                            server=server)
+            logging.info(f'Copying reporter for issue {issue}')
+        except AssertionError:
+            logging.error(f'{issue} not found, aborting migration.')
+            status = False
+            JIRA = None
+    else:
+        status = False
+        JIRA = None
+
+    if JIRA:
+        response = JIRA.copy_reporter()
+        if response:
+            logging.info(f"Successfully updated reporter from {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
+            status = response
+                
+        else:
+            logging.info(f'Failed to update reporter from issue: {issue}')
+            status = False
+
+    return status
+
+
+def bulk_update_reporter(args,
+                       server):
+    '''
+    '''
+    try:
+        f = open(args.file)
+        for line in f:
+            issue = line.rstrip()
+            update_reporter(args, server, issue=issue)
     except FileNotFoundError:
         logging.error(f'File {args.file} not found.')
         raise
@@ -379,24 +436,37 @@ def main():
         server = None
 
     # Match args and process appropriately
-    match (args.issue, args.file, args.summary, args.migrate, args.transition):
+    match (args.issue, 
+           args.file, 
+           args.summary, 
+           args.migrate, 
+           args.transition,
+           args.reporter):
 
         # Summarise Issue
-        case (args.issue, None, True, False, _):
+        case (args.issue, None, True, False, _, False):
             summarise_issue(args, server)
         
         # Summarise issues from file
-        case (None, args.file, True, False, _):
+        case (None, args.file, True, False, _, False):
             summary = summarise_file(args, server)
             csv_output(summary, out=args.output)
         
         # Migrate Issue
-        case (args.issue, None, False, True, _):
-            issue_migration(args, server)
+        case (args.issue, None, False, True, _, False):
+            issue_migration(args, server, issue)
 
         # Migrate issues from file
-        case (None, args.file, False, True, _):
+        case (None, args.file, False, True, _, False):
             bulk_migration(args, server)
+        
+        # Update Reporter on Issue
+        case (args.issue, None, False, False, _, True):
+            update_reporter(args, server)
+
+        # Update Reporters from file
+        case (None, args.file, False, False, _, True):
+            bulk_update_reporter(args, server)
         
         # Transition Issue
         case (args.issue, None, False, False, args.transition):
