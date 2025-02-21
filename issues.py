@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20241127
+ Date Last Updated: 20250219
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.3.1'
+__version__ = '0.3.3'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -109,7 +109,8 @@ class ISSUES():
                                      'Summary',
                                      'Reporter',
                                      'Priority',
-                                     'Prospects/Customers' ]
+                                     'Prospects/Customers',
+                                     'RFE #' ]
 
         # self.required_fields:dict = {}
 
@@ -692,7 +693,7 @@ class ISSUES():
         return accountId
 
 
-    def update_reporter(self, accountId:str) -> bool:
+    def update_reporter(self, email:str = '', accountId:str = '') -> bool:
         '''
         Update the reporter field with the account id supplied
         '''
@@ -708,8 +709,39 @@ class ISSUES():
                 _logger.debug(Err)
                 status = False
         
+        elif email:
+            query = self.jira_session.search_users(query=email)
+            if query:
+                accountId = query[0].accountId
+                status = self.update_reporter(accountId=accountId)
+            else:
+                _logger.warning(f'No user found with email: {email}')
+                status = False
+        
         else:
             _logger.warning('No accountId supplied')
             status = False
         
         return status
+    
+
+    def get_comment_author(self, index:int) -> str:
+        '''
+        Get the author of a comment by index
+
+        Return acccountId or None
+        '''
+        accountId:str = None
+
+        if self.issue:
+            try:
+                accountId = self.issue.fields.comment.comments[index].author.accountId
+            except:
+                _logger.error(f'Failed to retrieve author for comment {index}')
+                accountId = None
+        else:
+            _logger.warning('Use get_issue() to retrieve an issue first')
+            accountId = None
+
+        return accountId
+
