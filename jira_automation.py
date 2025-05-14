@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -314,7 +314,7 @@ def issue_migration(args, server, issue:str = None):
     if JIRA:
         response = JIRA.migrate_issue()
         if response:
-            if 'Previously' not in response:
+            if 'previously' not in response:
                 logging.info(f"Successfully submitted {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
                 status = True
             else:
@@ -454,7 +454,7 @@ def main():
         
         # Migrate Issue
         case (args.issue, None, False, True, _, False):
-            issue_migration(args, server, issue)
+            issue_migration(args, server, issue=args.issue)
 
         # Migrate issues from file
         case (None, args.file, False, True, _, False):

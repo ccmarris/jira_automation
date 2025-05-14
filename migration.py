@@ -509,7 +509,7 @@ class MIGRATE_ISSUE():
         issue:str
 
         if self.src.issue and self.dst.issue:
-            accountId = self.src.get_reporter()
+            accountId = self.src.get_reporter_id()
         else: 
             issue = self.migrated()
             if self.dst.get_issue(issue):
