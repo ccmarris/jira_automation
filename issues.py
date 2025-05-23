@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20250219
+ Date Last Updated: 20250522
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.3.3'
+__version__ = '0.3.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -481,7 +481,15 @@ class ISSUES():
         meta = self.jira_session.createmeta(projectKeys=project, 
                                             issuetypeNames=issuetype, 
                                             expand='projects.issuetypes.fields')
-        schema = meta['projects'][0]['issuetypes'][0]['fields']
+        if meta.get('projects'):
+            if meta['projects'][0].get('issuetypes'):
+                if meta['projects'][0]['issuetypes'][0].get('fields'):
+                    # Get the fields for the first issue type
+                    schema = meta['projects'][0]['issuetypes'][0]['fields']
+                else:
+                    _logger.error(f'No fields found for {project} {issuetype}')
+            else:
+                _logger.error(f'No issue types found for {project}')
 
         return schema
 
@@ -533,18 +541,28 @@ class ISSUES():
             if all_fields:
                 for k in self.issue.fields.__dict__.keys():
                     if translate:
-                        print(f'{self.field_map[k]}: {getattr(self.issue.fields, k)}')
+                        field = self.field_map.get(k)
                     else:
-                        print(f'{k}: {getattr(self.issue.fields, k)}')
+                        field = k
+                    value = getattr(self.issue.fields, k)
+                    if value:
+                        print(f'{field}: {value}')
+                    
             
             else:
                 schema = self.get_schema(project=project, issuetype=issuetype)
-                for k in schema.keys():
-                    if k in self.issue.fields.__dict__.keys():
-                        if translate:
-                            print(f'{self.field_map[k]}: {getattr(self.issue.fields, k)}')
-                        else:
-                            print(f'{k}: {getattr(self.issue.fields, k)}')
+                if isinstance(schema, dict):
+                    for k in schema.keys():
+                        if k in self.issue.fields.__dict__.keys():
+                            if translate:
+                                print(f'{self.field_map[k]}: {getattr(self.issue.fields, k)}')
+                            else:
+                                print(f'{k}: {getattr(self.issue.fields, k)}')
+                else:
+                    _logger.warning(f'Failed to retrieve schema for {project} {issuetype}')
+                    print(f'Failed to retrieve schema for {project} {issuetype}')
+                    print('Attempting to output all fields:')
+                    self.output_issue(translate=translate, all_fields=True)
         
         else:
             print('No issue selected, use get_issue()')

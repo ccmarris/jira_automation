@@ -312,7 +312,7 @@ def issue_migration(args, server, issue:str = None):
             JIRA = None
 
     if JIRA:
-        response = JIRA.migrate_issue()
+        response = JIRA.mrate_issue()
         if response:
             if 'previously' not in response:
                 logging.info(f"Successfully submitted {JIRA.src.issue.key} to {JIRA.dst.issue.key}")
