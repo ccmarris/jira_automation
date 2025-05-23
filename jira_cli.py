@@ -70,22 +70,26 @@ class JiraShell(cmd.Cmd):
         self.current_issue = None
         return
 
+
     def do_reconnect(self, arg):
         "Reconnect to Jira: reconnect"
         self.issues = ISSUES(inifile=self.issues.inifile)
         print(f'Connected to Jira: {self.issues.server}')
         return
 
+
     def do_get(self, arg):
         "Get an issue by key: get <ISSUE-KEY>"
-        if not arg:
-            print("Usage: get <ISSUE-KEY>")
-            return
-        if self.issues.get_issue(arg):
-            self.current_issue = arg
-            print(f"Issue {arg} loaded.")
+        if arg:
+            if self.issues.get_issue(arg):
+                self.current_issue = arg
+                print(f"Issue {arg} loaded.")
+            else:
+                print(f"Issue {arg} not found.")
         else:
-            print(f"Issue {arg} not found.")
+            print("Usage: get <ISSUE-KEY>")
+        return
+
 
     def do_create(self, arg):
         "Create an issue: create <summary> | <description>\nUse quotes if your summary or description contains spaces."
@@ -94,33 +98,39 @@ class JiraShell(cmd.Cmd):
             parts = shlex.split(arg)
             if len(parts) < 2:
                 print("Usage: create <summary> | <description>")
-                return
-            # Support both '|' separator and two quoted arguments
-            if '|' in arg:
-                summary, description = arg.split('|', 1)
-                summary = summary.strip()
-                description = description.strip()
             else:
-                summary, description = parts[0], " ".join(parts[1:])
-            issue_dict = self.issues.create_issue_dict(summary, description)
-            if self.issues.create_issue(issue_dict):
-                print("Issue created successfully.")
-            else:
-                print("Failed to create issue.")
+                # Support both '|' separator and two quoted arguments
+                if '|' in arg:
+                    summary, description = arg.split('|', 1)
+                    summary = summary.strip()
+                    description = description.strip()
+                else:
+                    summary, description = parts[0], " ".join(parts[1:])
+                issue_dict = self.issues.create_issue_dict(summary, description)
+                if self.issues.create_issue(issue_dict):
+                    print("Issue created successfully.")
+                else:
+                    print("Failed to create issue.")
         except ValueError:
             print("Usage: create <summary> | <description>")
+        
+        return
+
 
     def do_comment(self, arg):
         "Add a comment to the current issue: comment <text>\nUse quotes if your comment contains spaces."
-        if not self.current_issue:
-            print("No issue loaded. Use get <ISSUE-KEY> first.")
-            return
-        # Use shlex to support spaces in quoted arguments
-        comment = arg if arg else ""
-        if self.issues.add_comment(comment):
-            print("Comment added.")
+        if self.current_issue:
+            # Use shlex to support spaces in quoted arguments
+            comment = arg if arg else ""
+            if self.issues.add_comment(comment):
+                print("Comment added.")
+            else:
+                print("Failed to add comment.")
         else:
-            print("Failed to add comment.")
+            print("No issue loaded. Use get <ISSUE-KEY> first.")
+        
+        return
+
 
     def do_show(self, arg):
         "Show fields for the current issue: show <all>"
@@ -147,7 +157,7 @@ class JiraShell(cmd.Cmd):
             return
         print(self.issues.summarise_issue())
 
-    def do_updatefield(self, arg):
+    def do_updfield(self, arg):
         "Update a field: updatefield <field> <value>\nUse quotes if your value contains spaces."
         try:
             parts = shlex.split(arg)
@@ -179,6 +189,21 @@ class JiraShell(cmd.Cmd):
             print("This is not an IFR issue. Use get <ISSUE-KEY> first.")
         return
     
+    def do_updreporter(self, arg):
+        "Update the reporter: update_reporter <email>\nUse quotes if your email contains spaces."
+        if not self.current_issue:
+            print("No issue loaded. Use get <ISSUE-KEY> first.")
+            return
+        try:
+            if self.issues.update_reporter(arg):
+                print("Reporter updated.")
+            else:
+                print("Failed to update reporter.")
+        except ValueError:
+            print("Usage: update_reporter <email>")
+        return
+    
+
     def do_migrate(self, arg):
         "Migrate the current issue (RFEs only): migrate"
         status = False
