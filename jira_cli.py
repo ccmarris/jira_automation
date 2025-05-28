@@ -12,7 +12,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20250523
+ Date Last Updated: 20250528
 
  Todo:
 
@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -203,6 +203,21 @@ class JiraShell(cmd.Cmd):
             print("Usage: update_reporter <email>")
         return
     
+    def do_query(self, arg):
+        "Query issues: query <JQL>\nUse quotes if your JQL contains spaces."
+        if arg:
+            query = shlex.split(arg)
+            issues = self.issues.jql_query(query)
+            if issues:
+                print(f"Found {len(issues)} issues:")
+                for issue in issues:
+                    print(issue)
+            else:
+                print("No issues found.")
+            
+        else:
+            print("Usage: query <JQL>")
+        return
 
     def do_migrate(self, arg):
         "Migrate the current issue (RFEs only): migrate"
