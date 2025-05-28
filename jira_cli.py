@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -211,7 +211,10 @@ class JiraShell(cmd.Cmd):
             if issues:
                 print(f"Found {len(issues)} issues:")
                 for issue in issues:
-                    print(issue)
+                    self.issues.get_issue(issue)
+                    status = self.issues.status()
+                    summary = self.issues.issue.fields.summary
+                    print(f"{issue}: {status}, {summary}")
             else:
                 print("No issues found.")
             
