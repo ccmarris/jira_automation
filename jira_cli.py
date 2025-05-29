@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -103,6 +103,22 @@ class JiraShell(cmd.Cmd):
                 print(text)
         else:
             print(text)
+        
+        return
+
+    def output_fields(self, fields, filename=None, comsole_output=False):
+        '''
+        Outputs fields to a file if filename is provided, otherwise prints to stdout.
+        '''
+        if filename:
+            filename = self.expand_path(filename)
+            with open(filename, 'a') as f:
+                for key, value in fields.items():
+                    f.write(f"{key}: {value}\n")
+                    print(f"{key}: {value}")
+        else:
+            for key, value in fields.items():
+                print(f"{key}: {value}")
         
         return
 
@@ -169,13 +185,16 @@ class JiraShell(cmd.Cmd):
 
     def do_show(self, arg):
         "Show fields for the current issue: show <all>"
+        real_args, filename = self.parse_redirection(arg)
         if not self.current_issue:
             print("No issue loaded. Use get <ISSUE-KEY> first.")
             return
-        if arg == 'all':
-            self.issues.output_issue(all_fields=True)
+        if real_args == 'all':
+            data = self.issues.output_issue(all_fields=True)
+            self.output_fields(data, filename=filename)
         else:
-            self.issues.output_issue(all_fields=False)
+            data = self.issues.output_issue(all_fields=False)
+            self.output_fields(data, filename=filename)
         return
 
     def do_status(self, arg):
@@ -194,8 +213,9 @@ class JiraShell(cmd.Cmd):
         else:
             summary = self.issues.summarise_issue()
             if summary:
-                for key, value in summary.items():
-                    self.write_output(f"{key}: {value}", filename=filename)
+                self.output_fields(summary,
+                                   filename=filename,
+                                   comsole_output=True)
             else:
                 print("No summary available for this issue.")
         return

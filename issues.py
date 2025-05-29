@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.3.6'
+__version__ = '0.3.7'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -534,6 +534,7 @@ class ISSUES():
         '''
         project:str = ''
         issuetype:str = ''
+        output_fields:dict = {}
 
         if self.issue:
             project = self.issue.fields.project.key
@@ -547,6 +548,7 @@ class ISSUES():
                     value = getattr(self.issue.fields, k)
                     if value:
                         print(f'{field}: {value}')
+                        output_fields.update({field: value})
                     
             
             else:
@@ -556,8 +558,10 @@ class ISSUES():
                         if k in self.issue.fields.__dict__.keys():
                             if translate:
                                 print(f'{self.field_map[k]}: {getattr(self.issue.fields, k)}')
+                                output_fields.update({self.field_map[k]: getattr(self.issue.fields, k)})
                             else:
                                 print(f'{k}: {getattr(self.issue.fields, k)}')
+                                output_fields.update({k: getattr(self.issue.fields, k)})
                 else:
                     _logger.warning(f'Failed to retrieve schema for {project} {issuetype}')
                     print(f'Failed to retrieve schema for {project} {issuetype}')
@@ -567,7 +571,7 @@ class ISSUES():
         else:
             print('No issue selected, use get_issue()')
         
-        return
+        return output_fields
 
 
     def summarise_issue(self, 
