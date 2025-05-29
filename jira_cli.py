@@ -12,7 +12,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20250528
+ Date Last Updated: 20250529
 
  Todo:
 
@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -284,9 +284,9 @@ class JiraShell(cmd.Cmd):
                 self.write_output(f"Found {len(issues)} issues:", 
                                   filename=filename)
                 for issue in issues:
-                    self.issues.get_issue(issue)
-                    status = self.issues.status()
-                    summary = self.issues.issue.fields.summary
+                    # self.issues.get_issue(issue)
+                    status = issue.fields.status.name
+                    summary = issue.fields.summary
                     self.write_output(f"{issue}: {status}, {summary}", 
                                       filename=filename)
             else:

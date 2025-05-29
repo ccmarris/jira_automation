@@ -11,7 +11,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20250528
+ Date Last Updated: 20250529
 
  Todo:
 
@@ -42,7 +42,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.3.7'
+__version__ = '0.3.8'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -709,12 +709,16 @@ class ISSUES():
         try:
             issues = self.jira_session.search_issues(query)
 
-            if issues:
-                for issue in issues:
-                    _logger.debug(f'Matched issue: {issue}')
-                    issue_list.append(issue.key)
-            else:
-                issue_list = []
+            while len(issues):
+                _logger.debug(f'Found {len(issues)} issues, retrieving next page')
+                if issues:
+                    for issue in issues:
+                        _logger.debug(f'Matched issue: {issue.key}')
+                        issue_list.append(issue)
+                else:
+                    issue_list = []
+                    break
+                issues = self.jira_session.search_issues(query, startAt=len(issue_list))
 
         except jira.exceptions.JIRAError as Err:
             _logger.error(Err)
