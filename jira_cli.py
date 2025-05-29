@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.2'
+__version__ = '0.1.5'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -269,31 +269,60 @@ class JiraShell(cmd.Cmd):
         return
     
     def do_query(self, arg):
-        "Query issues: query <JQL>\nUse quotes if your JQL contains spaces."
+        "Query issues: query <JQL> <summary>\nUse quotes if your JQL contains spaces."
+        summary:bool = False
+        issue_summary:str = ''
+        header:str = 'key,status,Summary,Reporter,Product,RFE #'
+
         real_args, filename = self.parse_redirection(arg)
-        if arg:
-            query = shlex.split(real_args)
+        if real_args:
+            parts = shlex.split(real_args)
+            if len(parts) > 1:
+                query = parts[0]
+                command = " ".join(parts[1:])
+                if command == 'summary':
+                    summary = True
+                else:
+                    summary = False
+
+            else:
+                query = parts
             try:
                 print("Executing JQL query...")
                 issues = self.issues.jql_query(query)
             except Exception as e:
                 print(f"Error executing JQL query: {e}")
+
             if issues:
+                # Check if filename is provided
                 if filename:
                     print(f"Writing output to {filename}")
-                self.write_output(f"Found {len(issues)} issues:", 
-                                  filename=filename)
+                if summary:
+                    # Output CSV Header
+                    self.write_output(header, filename=filename)
+
                 for issue in issues:
                     # self.issues.get_issue(issue)
                     status = issue.fields.status.name
-                    summary = issue.fields.summary
-                    self.write_output(f"{issue}: {status}, {summary}", 
-                                      filename=filename)
+                    issue_summary = issue.fields.summary
+                    if summary:
+                        reporter = issue.fields.reporter.displayName
+                        product = issue.fields.customfield_10114
+                        rfe = issue.fields.customfield_14487
+                        issue_output = f'{issue.key},{status},{issue_summary},{reporter},{product},{rfe}'
+                    else:
+                        issue_output = f'{issue}: {status}, {issue_summary}'
+                    self.write_output(issue_output, filename=filename)
+
+                # Output stats line
+                self.write_output(f"Found {len(issues)} issues", 
+                                  filename=filename)
             else:
                 self.write_output("No issues found.", filename=filename)
         else:
             print("Usage: query <JQL>")
         return
+
 
     def do_migrate(self, arg):
         "Migrate the current issue (RFEs only): migrate"
