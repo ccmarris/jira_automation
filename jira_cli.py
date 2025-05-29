@@ -43,17 +43,19 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.0.5'
+__version__ = '0.1.0'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
 
+import os
 import cmd
 import shlex
 import argparse
 from rich import print
 from issues import ISSUES
 import migration
+
 
 class JiraShell(cmd.Cmd):
     print(f'[bold green]Jira CLI v{__version__}[/bold green]')
@@ -70,6 +72,39 @@ class JiraShell(cmd.Cmd):
         self.current_issue = None
         return
 
+    def parse_redirection(self, arg):
+        '''
+        Splits arg into (real_args, filename) if '>' is present.
+        Returns (real_args, filename or None)
+        '''
+        if '>' in arg:
+            parts = arg.split('>')
+            real_args = parts[0].strip()
+            filename = parts[1].strip()
+        else:
+            real_args = arg
+            filename = None
+        
+        return real_args, filename
+
+
+    def expand_path(self, path):
+        # Expands ~ and returns absolute path
+        return os.path.abspath(os.path.expanduser(path))
+
+    def write_output(self, text, filename=None):
+        '''
+        Writes output to a file if filename is provided, otherwise prints to stdout.
+        '''
+        if filename:
+            filename = self.expand_path(filename)
+            with open(filename, 'a') as f:
+                f.write(text + '\n')
+                print(text)
+        else:
+            print(text)
+        
+        return
 
     def do_reconnect(self, arg):
         "Reconnect to Jira: reconnect"
@@ -147,26 +182,36 @@ class JiraShell(cmd.Cmd):
         "Show the status of the current issue: status"
         if not self.current_issue:
             print("No issue loaded. Use get <ISSUE-KEY> first.")
-            return
-        print(self.issues.status())
+        else:
+            print(self.issues.status())
+        return
 
     def do_summary(self, arg):
         "Show the summary of the current issue: summarise"
-        if not self.current_issue:
+        real_args, filename = self.parse_redirection(arg)
+        if not self.current_issue or real_args:
             print("No issue loaded. Use get <ISSUE-KEY> first.")
-            return
-        print(self.issues.summarise_issue())
+        else:
+            summary = self.issues.summarise_issue()
+            if summary:
+                for key, value in summary.items():
+                    self.write_output(f"{key}: {value}", filename=filename)
+            else:
+                print("No summary available for this issue.")
+        return
+    
 
     def do_updfield(self, arg):
         "Update a field: updatefield <field> <value>\nUse quotes if your value contains spaces."
+        real_args, filename = self.parse_redirection(arg)
         try:
-            parts = shlex.split(arg)
+            parts = shlex.split(real_args)
             if len(parts) < 2:
                 print("Usage: updatefield <field> <value>")
                 return
             field, value = parts[0], " ".join(parts[1:])
             if self.issues.update_field(field, value):
-                print("Field updated.")
+                self.write_output("Field updated.")
             else:
                 print("Failed to update field.")
         except ValueError:
@@ -205,19 +250,27 @@ class JiraShell(cmd.Cmd):
     
     def do_query(self, arg):
         "Query issues: query <JQL>\nUse quotes if your JQL contains spaces."
+        real_args, filename = self.parse_redirection(arg)
         if arg:
-            query = shlex.split(arg)
-            issues = self.issues.jql_query(query)
+            query = shlex.split(real_args)
+            try:
+                print("Executing JQL query...")
+                issues = self.issues.jql_query(query)
+            except Exception as e:
+                print(f"Error executing JQL query: {e}")
             if issues:
-                print(f"Found {len(issues)} issues:")
+                if filename:
+                    print(f"Writing output to {filename}")
+                self.write_output(f"Found {len(issues)} issues:", 
+                                  filename=filename)
                 for issue in issues:
                     self.issues.get_issue(issue)
                     status = self.issues.status()
                     summary = self.issues.issue.fields.summary
-                    print(f"{issue}: {status}, {summary}")
+                    self.write_output(f"{issue}: {status}, {summary}", 
+                                      filename=filename)
             else:
-                print("No issues found.")
-            
+                self.write_output("No issues found.", filename=filename)
         else:
             print("Usage: query <JQL>")
         return
