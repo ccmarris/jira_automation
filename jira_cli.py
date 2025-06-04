@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -157,25 +157,24 @@ class JiraShell(cmd.Cmd):
             print("Usage: get <ISSUE-KEY>")
         return
 
-    '''
+
     def do_list(self, arg):
         "List issues assigned to you or matching a filter: list [<JQL>]"
         real_args, filename = self.parse_redirection(arg)
+        query = '"assignee = currentUser() ORDER BY updated DESC"'
         if real_args:
-            issues = self.issues.jql_query(real_args)
+            if real_args == 'summary':
+                # If 'summary' is provided, list issues with summary
+                self.do_query(query + ' summary')
+            else:
+                self.do_query(arg)
         else:
             # Default: issues assigned to current user
-            issues = self.issues.jql_query('assignee = currentUser() ORDER BY updated DESC')
-        if issues:
-            for issue in issues:
-                summary = issue.fields.summary
-                status = issue.fields.status.name
-                self.write_output(f"{issue.key}: {status} - {summary}", filename=filename)
-        else:
-            self.write_output("No issues found.", filename=filename)
+            if filename:
+                query = f'{query} > {filename}'
+            self.do_query(query)
 
         return
-    '''
     
 
     def do_create(self, arg):
@@ -233,6 +232,7 @@ class JiraShell(cmd.Cmd):
             self.output_fields(data, filename=filename)
         return
 
+
     def do_status(self, arg):
         "Show the status of the current issue: status"
         if not self.current_issue:
@@ -240,6 +240,7 @@ class JiraShell(cmd.Cmd):
         else:
             print(self.issues.status())
         return
+
 
     def do_summary(self, arg):
         "Show the summary of the current issue: summarise"
@@ -273,6 +274,7 @@ class JiraShell(cmd.Cmd):
         except ValueError:
             print("Usage: updatefield <field> <value>")
 
+
     def do_updrfe(self, arg):
         "Update the RFE # field: update_rfe <field> <value>\nUse quotes if your value contains spaces."
         if not self.current_issue:
@@ -290,6 +292,7 @@ class JiraShell(cmd.Cmd):
             print("This is not an IFR issue. Use get <ISSUE-KEY> first.")
         return
     
+
     def do_updreporter(self, arg):
         "Update the reporter: update_reporter <email>\nUse quotes if your email contains spaces."
         if not self.current_issue:
@@ -304,6 +307,7 @@ class JiraShell(cmd.Cmd):
             print("Usage: update_reporter <email>")
         return
     
+
     def do_query(self, arg):
         "Query issues: query <JQL> <summary>\nUse quotes if your JQL contains spaces."
         summary:bool = False
@@ -343,8 +347,17 @@ class JiraShell(cmd.Cmd):
                     issue_summary = issue.fields.summary
                     if summary:
                         reporter = issue.fields.reporter.displayName
-                        product = issue.fields.customfield_10114
-                        rfe = issue.fields.customfield_14487
+                        # Check if custom field exists
+                        if hasattr(issue.fields, 'customfield_10114'):
+                            product = issue.fields.customfield_10114
+                        else:
+                            product = 'N/A'
+                        # Check if custom field exist
+                        if hasattr(issue.fields, 'customfield_14487'):
+                            rfe = issue.fields.customfield_14487
+                        else:
+                            rfe = 'N/A'
+
                         issue_output = f'{issue.key},{status},{issue_summary},{reporter},{product},{rfe}'
                     else:
                         issue_output = f'{issue}: {status}, {issue_summary}'
