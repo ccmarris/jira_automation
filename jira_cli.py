@@ -12,7 +12,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20250529
+ Date Last Updated: 20250604
 
  Todo:
 
@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.5'
+__version__ = '0.1.7'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -51,6 +51,7 @@ __author_email__ = 'chris@infoblox.com'
 import os
 import cmd
 import shlex
+import readline  # For command history
 import argparse
 from rich import print
 from issues import ISSUES
@@ -65,12 +66,27 @@ class JiraShell(cmd.Cmd):
     prompt = "jira> "
 
     def __init__(self, inifile:str = 'jira.ini'):
-        super().__init__(completekey='Tab', stdin=None, stdout=None)
+        # super().__init__(completekey='tab', stdin=None, stdout=None)
+        super().__init__()
         self.inifile = inifile
         self.issues = ISSUES(inifile=inifile)
         print(f'Connected to Jira: {self.issues.server}')
         self.current_issue = None
         return
+
+    def preloop(self):
+        # Load history file if you want persistence
+        try:
+            readline.read_history_file('.jira_cli_history')
+        except FileNotFoundError:
+            pass
+        return
+
+    def postloop(self):
+        # Save history file
+        readline.write_history_file('.jira_cli_history')
+        return
+
 
     def parse_redirection(self, arg):
         '''
@@ -124,7 +140,7 @@ class JiraShell(cmd.Cmd):
 
     def do_reconnect(self, arg):
         "Reconnect to Jira: reconnect"
-        self.issues = ISSUES(inifile=self.issues.inifile)
+        self.issues = ISSUES(inifile=self.inifile)
         print(f'Connected to Jira: {self.issues.server}')
         return
 
@@ -141,6 +157,26 @@ class JiraShell(cmd.Cmd):
             print("Usage: get <ISSUE-KEY>")
         return
 
+    '''
+    def do_list(self, arg):
+        "List issues assigned to you or matching a filter: list [<JQL>]"
+        real_args, filename = self.parse_redirection(arg)
+        if real_args:
+            issues = self.issues.jql_query(real_args)
+        else:
+            # Default: issues assigned to current user
+            issues = self.issues.jql_query('assignee = currentUser() ORDER BY updated DESC')
+        if issues:
+            for issue in issues:
+                summary = issue.fields.summary
+                status = issue.fields.status.name
+                self.write_output(f"{issue.key}: {status} - {summary}", filename=filename)
+        else:
+            self.write_output("No issues found.", filename=filename)
+
+        return
+    '''
+    
 
     def do_create(self, arg):
         "Create an issue: create <summary> | <description>\nUse quotes if your summary or description contains spaces."
@@ -320,7 +356,7 @@ class JiraShell(cmd.Cmd):
             else:
                 self.write_output("No issues found.", filename=filename)
         else:
-            print("Usage: query <JQL>")
+            print("Usage: query <JQL> <summary>")
         return
 
 
