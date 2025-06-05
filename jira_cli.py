@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.1.8'
+__version__ = '0.2.0'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -178,7 +178,7 @@ class JiraShell(cmd.Cmd):
 
 
     def do_list(self, arg):
-        "List issues assigned to you or matching a filter: list [assignee[=user]|]reporter[=<user>]|all|<JQL>]\nUse 'list' to see issues assigned to you."
+        "List issues assigned to you or matching a filter: list [assignee[=user]|]reporter[=<user>]|all]\nUse 'list' to see issues assigned to you."
         '''
         List issues assigned to you or matching a filter: list [<subcommand>|<JQL>]
         Subcommands:
@@ -261,6 +261,16 @@ class JiraShell(cmd.Cmd):
 
         return
     
+
+    def complete_list(self, text, line, begidx, endidx):
+        "Complete the list command with subcommands."
+        subcommands = ['reporter', 'assigned', 'all']
+        if text:
+            return [cmd for cmd in subcommands if cmd.startswith(text)]
+        else:
+            return subcommands
+        return
+
 
     def do_create(self, arg):
         "Create an issue: create <summary> | <description>\nUse quotes if your summary or description contains spaces."
