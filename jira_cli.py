@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -189,9 +189,9 @@ class JiraShell(cmd.Cmd):
 
         # Map subcommands to JQL queries
         default_queries = {
-            'reporter': 'reporter = {value} ORDER BY updated DESC',
-            'assigned': 'assignee = {value} ORDER BY updated DESC',
-            'all': 'ORDER BY updated DESC'
+            'reporter': 'reporter = {value}',
+            'assigned': 'assignee = {value}',
+            'all': ''
         }
 
         real_args, filename = self.parse_redirection(arg)
@@ -231,15 +231,28 @@ class JiraShell(cmd.Cmd):
                 elif 'project' in part:
                     # If 'project' is provided, filter by project
                     project = part.split('=')[1].strip() if '=' in part else None
-                    query += ' project = ' + project if project else ''
+                    query += ' and project = ' + project if project else ''
                     _logger.debug(f'Appending project to query: {query}')
                 else:
                     print(f"Unknown parameter '{part}', ignoring.")
         else: 
+            #Assume single argument was passed, so check if it is a summary or project
             # Check for summary parameter
             if 'summary' in real_args:
                 summary = True
                 _logger.debug(f'Setting summary to True')
+            elif 'project' in real_args:
+                # If 'project' is provided, filter by project
+                project = real_args.split('=')[1].strip() if '=' in real_args else None
+                query += ' and project = ' + project if project else ''
+                _logger.debug(f'Appending project to query: {query}')
+            else:
+                pass
+
+        # Append ORDER BY clause (if not already present) to the query
+        if 'ORDER BY' not in query:
+            query += ' ORDER BY created DESC'
+            _logger.debug(f'Appending ORDER BY clause to query')
 
         # Quote the query to pass JQL to do_query add summary parameter if requested
         if summary:
