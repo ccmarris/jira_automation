@@ -43,7 +43,7 @@
  POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
@@ -178,7 +178,7 @@ class JiraShell(cmd.Cmd):
 
 
     def do_list(self, arg):
-        "List issues assigned to you or matching a filter: list [assignee[=user]|]reporter[=<user>]|all]\nUse 'list' to see issues assigned to you."
+        "List issues assigned to you or matching a filter: list [assignee[=user]|]reporter[=<user>]|status=[<status>]|all]\nUse 'list' to see issues assigned to you."
         '''
         List issues assigned to you or matching a filter: list [<subcommand>|<JQL>]
         Subcommands:
@@ -191,6 +191,7 @@ class JiraShell(cmd.Cmd):
         default_queries = {
             'reporter': 'reporter = {value}',
             'assigned': 'assignee = {value}',
+            'status': 'status = {value}',
             'all': ''
         }
 
