@@ -48,6 +48,7 @@ __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
 
 
+import logging
 import os
 import cmd
 import shlex
@@ -57,6 +58,7 @@ from rich import print
 from issues import ISSUES
 import migration
 
+_logger = logging.getLogger(__name__)
 
 class JiraShell(cmd.Cmd):
     print(f'[bold green]Jira CLI v{__version__}[/bold green]')
@@ -87,6 +89,20 @@ class JiraShell(cmd.Cmd):
         readline.write_history_file('.jira_cli_history')
         return
 
+    def do_debug(self, arg):
+        "Enable or disable debug mode: debug [on|off]"
+        if arg.lower() == 'on':
+            logging.basicConfig(level=logging.DEBUG)
+            _logger.setLevel(logging.DEBUG)
+            print("Debug mode enabled.")
+        elif arg.lower() == 'off':
+            logging.basicConfig(level=logging.INFO)
+            _logger.setLevel(logging.INFO)
+            print("Debug mode disabled.")
+        else:
+            print("Usage: debug [on|off]")
+        return
+
 
     def parse_redirection(self, arg):
         '''
@@ -101,12 +117,15 @@ class JiraShell(cmd.Cmd):
             real_args = arg
             filename = None
         
+        _logger.debug(f'Parsed args: {real_args}, filename: {filename}')
+        
         return real_args, filename
 
 
     def expand_path(self, path):
         # Expands ~ and returns absolute path
         return os.path.abspath(os.path.expanduser(path))
+
 
     def write_output(self, text, filename=None):
         '''
@@ -159,20 +178,86 @@ class JiraShell(cmd.Cmd):
 
 
     def do_list(self, arg):
-        "List issues assigned to you or matching a filter: list [<JQL>]"
+        "List issues assigned to you or matching a filter: list [assignee[=user]|]reporter[=<user>]|all|<JQL>]\nUse 'list' to see issues assigned to you."
+        '''
+        List issues assigned to you or matching a filter: list [<subcommand>|<JQL>]
+        Subcommands:
+        reporter   - issues where you are the reporter
+        assigned   - issues assigned to you (default)
+        all        - all issues visible to you
+        '''
+
+        # Map subcommands to JQL queries
+        default_queries = {
+            'reporter': 'reporter = {value} ORDER BY updated DESC',
+            'assigned': 'assignee = {value} ORDER BY updated DESC',
+            'all': 'ORDER BY updated DESC'
+        }
+
         real_args, filename = self.parse_redirection(arg)
-        query = '"assignee = currentUser() ORDER BY updated DESC"'
+        query:str = None
+        parts:list = []
+        summary:bool = False
+
         if real_args:
-            if real_args == 'summary':
-                # If 'summary' is provided, list issues with summary
-                self.do_query(query + ' summary')
+            parts = shlex.split(real_args)
+            subcmd = parts[0].strip().lower()
+            value = 'currentUser()'
+        
+            # Check for subcommand=value pattern
+            if '=' in subcmd:
+                # If subcmd is in the form of 'field=value', split it
+                subcmd, value = subcmd.split('=', 1)
+                subcmd = subcmd.strip()
+                # Quote value
+                value = f"'{value.strip()}'"
+
+            if subcmd in default_queries:
+                query = default_queries[subcmd].format(value=value)
             else:
-                self.do_query(arg)
+                # Default: issues assigned to current user
+                query = default_queries['assigned'].format(value='currentUser()')
         else:
             # Default: issues assigned to current user
-            if filename:
-                query = f'{query} > {filename}'
-            self.do_query(query)
+            query = default_queries['assigned'].format(value='currentUser()')
+
+        if len(parts) > 1: 
+            for part in parts[1:]:
+                part = part.strip().lower()
+                if part == 'summary':
+                    # If 'summary' is provided, list issues with summary
+                    summary = True
+                    _logger.debug(f'Setting summary')
+                elif 'project' in part:
+                    # If 'project' is provided, filter by project
+                    project = part.split('=')[1].strip() if '=' in part else None
+                    query += ' project = ' + project if project else ''
+                    _logger.debug(f'Appending project to query: {query}')
+                else:
+                    print(f"Unknown parameter '{part}', ignoring.")
+        else: 
+            # Check for summary parameter
+            if 'summary' in real_args:
+                summary = True
+                _logger.debug(f'Setting summary to True')
+
+        # Quote the query to pass JQL to do_query add summary parameter if requested
+        if summary:
+            # If summary is requested, modify the query to include summary
+            query = f'"{query}" summary'
+        else:
+            # If summary is not requested, just use the query as is
+            query = f'"{query}"'
+
+        _logger.debug(f'Parsed query: {query}')
+        # If redirection is specified, append it to the query
+        if filename:
+            query = f'{query} > {filename}'
+            _logger.debug(f'Redirection to file: {filename}')
+
+        # Execute the query
+        _logger.debug(f'Executing query with parameters: {query}')
+        self.do_query(query)
 
         return
     
